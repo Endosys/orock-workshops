@@ -122,8 +122,8 @@
   tags:
     - tf_create
 
-- name: Template proxy-user-data
-  template: dest="{{ terraform_working_dir }}/proxy-user-data.txt"  src=proxy-user-data.txt.j2
+- name: Template infra-user-data
+  template: dest="{{ terraform_working_dir }}/infra-user-data.txt"  src=infra-user-data.txt.j2
   tags:
     - tf_create
 
@@ -176,7 +176,7 @@
 - name: Add public ip to hosts file
   lineinfile:
     path: /etc/hosts
-    line: "{{ openstack_public_ip }} {{ workshop_prefix }}.proxy.{{ domain_name }}"
+    line: "{{ openstack_public_ip }} {{ workshop_prefix }}.infra.{{ domain_name }}"
 
 #- name: configure nginx
 #- name: Run Terraform ( < 0.11.0 )
