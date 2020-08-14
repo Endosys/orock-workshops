@@ -1,0 +1,133 @@
+# file: 2_load.yml
+---
+# https://www.terraform.io/docs/providers/aws/index.html
+
+- name: Wait for AWS AMIs to become initialized
+  hosts: localhost
+  tasks:
+    - wait_for:
+        host: "{{ item }}"
+        port: 22
+        state: started
+        timeout: 300
+      with_items: "{{ groups.all_nodes }}"
+
+- name: Configure repositories on nodes
+  become: yes
+  remote_user: ec2-user
+  hosts: nodes
+  roles:
+    - role: subscription_manager
+
+      #- name: Configure epel on nodes (RHEL 8)
+      #become: yes
+      #remote_user: ec2-user
+      #hosts: nodes
+      #tasks:
+      #- name: RHEL 8 on AWS via Cloud Access has no available repositories
+      #fail:
+      #msg: "Please use RHSM via user ID/password or org ID/activation key."
+      #when: cloud_access and ansible_distribution == 'RedHat' and ansible_distribution_major_version == '8'
+      #roles:
+      #- role: epel
+
+- name: Configure epel on nodes (RHEL 7)
+  become: yes
+  remote_user: ec2-user
+  hosts: nodes
+  tasks:
+    - name: RHEL 7 on AWS via Cloud Access has no available repositories
+      fail:
+        msg: "Please use RHSM via user ID/password or org ID/activation key."
+      when: cloud_access and ansible_distribution == 'RedHat' and ansible_distribution_major_version == '7'
+  roles:
+    - role: epel
+      when: rhel_ver == 'rhel7'
+
+- name: Configure LetsEncrypt on Specified Node
+  become: yes
+  remote_user: ec2-user
+  hosts: nodes
+  gather_facts: no
+  roles:
+    - role: LetsEncrypt
+
+      #- name: Ensure python3-pip installed for powerline (RHEL 8)
+      #become: yes
+      #remote_user: ec2-user
+      #hosts: nodes
+      #gather_facts: no
+      #tasks:
+      #- package:
+      #  name: python3-pip
+      #  state: latest
+      #when: rhel_ver == 'rhel8'
+
+# - name: Configure software on nodes (RHEL 8)
+#   become: yes
+#   remote_user: ec2-user
+#   hosts: nodes
+#   roles:
+#     - role: nodejs
+#       when: rhel_ver == 'rhel8'
+#     - role: system-user
+#       when: rhel_ver == 'rhel8'
+      #  - role: powerline
+      #when: rhel_ver == 'rhel8'
+
+- name: Install software and configure web console
+  become: yes
+  remote_user: ec2-user
+  hosts: nodes
+  gather_facts: no
+  pre_tasks:
+    - name: Install podman
+      yum:
+        name: podman
+        state: latest
+
+  roles:
+    - role: ansible_ssh_pipelining
+      when: rhel_ver == 'rhel7'
+    - role: docker
+      when: rhel_ver == 'rhel7'
+    - role: atomic_scanner_plugins
+      # when: rhel_ver == 'rhel7'
+    - role: container_check_stp
+      # when: rhel_ver == 'rhel7'
+    - role: jq
+      when: rhel_ver == 'rhel7'
+    - role: skopeo
+      # when: rhel_ver == 'rhel7'
+    - role: nodejs
+      # when: rhel_ver == 'rhel7'
+    - role: system-user
+      # when: rhel_ver == 'rhel7'
+    - role: cockpit
+      # when: rhel_ver == 'rhel7'
+
+# - name: Configure web console (RHEL 8)
+#   become: yes
+#   remote_user: ec2-user
+#   hosts: nodes
+#   gather_facts: no
+#   roles:
+#     - role: cockpit
+#       when: rhel_ver == 'rhel8'
+
+- name: Upgrade packages
+  become: yes
+  remote_user: ec2-user
+  hosts: nodes
+  roles:
+    - role: upgrade
+
+- name: Re-enable repo when upgrade disables it
+  become: yes
+  remote_user: ec2-user
+  hosts: nodes
+  gather_facts: yes
+  roles:
+    - role: subscription_manager 
+
+...
