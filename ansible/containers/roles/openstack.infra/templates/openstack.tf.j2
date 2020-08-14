@@ -124,9 +124,9 @@ output "openstack_compute_secgroup_v2_secgroup" {
 #----------------------------------------------
 # proxy instance
 #----------------------------------------------
-resource "openstack_compute_instance_v2" "proxy" {
+resource "openstack_compute_instance_v2" "infra" {
   depends_on      = [openstack_networking_subnet_v2.subnet,openstack_compute_secgroup_v2.secgroup]
-  name            = "{{ workshop_prefix }}.proxy.{{ domain_name }}"
+  name            = "{{ workshop_prefix }}.infra.{{ domain_name }}"
   # image_id        = "{{ os_image_id }}"
   flavor_id       = "{{ os_image_flavor_id }}"
   key_pair        = "{{ workshop_prefix }}-containers"

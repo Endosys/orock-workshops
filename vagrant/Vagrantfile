@@ -51,19 +51,21 @@ raytheon_container101_workshop = %{
 
 
   sudo dnf install -y git python3-virtualenv ansible
+  sudo ln -s /usr/bin/python3 /usr/bin/python
+  sudo ln -s /usr/bin/pip3 /usr/bin/pip
+  sudo pip install python-openstackclient
   mkdir src
   cd src/
-  #git clone https://github.com/RedHatGov/redhatgov.workshops.git
   git clone https://github.com/Endosys/orock-workshops.git
   cd ~/src/orock-workshops/ansible/containers/
   cp ~/all.yml group_vars/all.yml
   echo 'cd /home/vagrant/src/orock-workshops/ansible/containers/' >> ~/.bash_profile
   echo "export AWS_ACCESS_KEY_ID=$(grep aws_access_key ~/all.yml | awk -F'\"' '{print $2}')" >> ~/.bash_profile
   echo "export AWS_SECRET_ACCESS_KEY=$(grep aws_secret_key ~/all.yml | awk -F'\"' '{print $2}')" >> ~/.bash_profile
-  echo 'virtualenv --system-site-packages ansible' >> ~/.bash_profile
-  echo 'source ansible/bin/activate' >> ~/.bash_profile
-  echo 'pip install boto boto3' >> ~/.bash_profile
-  echo 'pip install python-openstackclient' >> ~/.bash_profile
+  #echo 'virtualenv --system-site-packages ansible' >> ~/.bash_profile
+  #echo 'source ansible/bin/activate' >> ~/.bash_profile
+  #echo 'pip install boto boto3' >> ~/.bash_profile
+  #echo 'pip install python-openstackclient' >> ~/.bash_profile
   # ensure vagrant user can write to /etc/hosts
   sudo setfacl -m u:vagrant:rwx /etc
   sudo setfacl -m u:vagrant:rw /etc/hosts
