@@ -122,7 +122,7 @@ output "openstack_compute_secgroup_v2_secgroup" {
   value = "Completed ${openstack_compute_secgroup_v2.secgroup.name}"
 }
 #----------------------------------------------
-# proxy instance
+# infra instance
 #----------------------------------------------
 resource "openstack_compute_instance_v2" "infra" {
   depends_on      = [openstack_networking_subnet_v2.subnet,openstack_compute_secgroup_v2.secgroup]
@@ -131,7 +131,7 @@ resource "openstack_compute_instance_v2" "infra" {
   flavor_id       = "{{ os_image_flavor_id }}"
   key_pair        = "{{ workshop_prefix }}-containers"
   security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
-  user_data       = file("proxy-user-data.txt")
+  user_data       = file("infra-user-data.txt")
 
   block_device {
     uuid                  = "{{ os_image_id }}"
@@ -150,15 +150,15 @@ resource "openstack_compute_instance_v2" "infra" {
     name = openstack_networking_network_v2.network.name
   }
 }
-output "openstack_compute_instance_v2_proxy" {
-  value = "Completed ${openstack_compute_instance_v2.proxy.name}"
+output "openstack_compute_instance_v2_infra" {
+  value = "Completed ${openstack_compute_instance_v2.infra.name}"
 }
 
 resource "openstack_compute_floatingip_associate_v2" "external_ip" {
-  depends_on  = [openstack_networking_floatingip_v2.floatingip,openstack_compute_instance_v2.proxy]
+  depends_on  = [openstack_networking_floatingip_v2.floatingip,openstack_compute_instance_v2.infra]
   floating_ip = openstack_networking_floatingip_v2.floatingip.address
-  instance_id = openstack_compute_instance_v2.proxy.id
-  fixed_ip    = openstack_compute_instance_v2.proxy.network.0.fixed_ip_v4
+  instance_id = openstack_compute_instance_v2.infra.id
+  fixed_ip    = openstack_compute_instance_v2.infra.network.0.fixed_ip_v4
 }
 #----------------------------------------------
 # workshop node instances
