@@ -1,4 +1,4 @@
-ansible_ssh_user=ec2-user
+ansible_ssh_user=cloud-user
 ansible_become=yes
 
 [local_target]
@@ -7,3 +7,5 @@ localhost  ansible_connection=local  ansible_python_interpreter='/usr/bin/env py
 [nodes]
 
 [all_nodes]
+
+[proxy]

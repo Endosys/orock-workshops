@@ -1,4 +1,4 @@
-ansible_ssh_user=ec2-user
+ansible_ssh_user=cloud-user
 ansible_become=yes
 
 [local_target]
@@ -9,3 +9,6 @@ localhost  ansible_connection=local  ansible_python_interpreter='/usr/bin/env py
 
 [all_nodes]
 {{workshop_prefix}}.[0:{{ number_nodes | int - 1 }}].{{ domain_name }}
+
+[proxy]
+{{workshop_prefix}}.proxy.{{ domain_name }}

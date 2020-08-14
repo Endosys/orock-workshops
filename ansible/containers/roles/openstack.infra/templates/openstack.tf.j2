@@ -1,0 +1,361 @@
+# LAUNCH TOWER IN AMAZON EC2 (Public Tower Image)
+# ------------------------------------------------
+# EC2 Region  Location      AMI TYPE  AMI ID    
+# us-east-1   N. Virginia   PV        ami-a86614bf
+# us-west-1   N. California PV        ami-cdd79aad
+# us-west-2   Oregon        PV        ami-028f5e62
+
+#----------------------------------------------
+# Variables
+#----------------------------------------------
+variable "aws_access_key" {}
+variable "aws_secret_key" {}
+variable "security_group" { default = "{{ workshop_prefix }}-containers-101-sg" }
+variable "keypair" { default = "{{ workshop_prefix }}-containers" }
+variable "node_instance_type" { default = "{{ node_instance_type }}" } 
+variable "aws_region" { default = "{{ region }}" }
+variable "ebs_root_block_size" { default = "50" }
+variable "aws_node_ami" { default = "{{ ami_id }}" }
+variable "number_nodes" { default = "{{ number_nodes }}" }
+#----------------------------------------------
+# API Keys
+#----------------------------------------------
+provider "openstack" {
+    cloud = "openstack"
+#    access_key = "${var.aws_access_key}"
+#    secret_key = "${var.aws_secret_key}"
+#    region     = "${var.aws_region}"
+}
+#----------------------------------------------
+# external floating ip
+#----------------------------------------------
+# public external floating ip.
+resource "openstack_networking_floatingip_v2" "floatingip" {
+  pool = "{{ os_public_network_name }}"
+  description = "{{ workshop_prefix }}-containers-101-floatingip"
+}
+output "openstack_networking_floatingip_v2_floatingip" {
+  value = "Completed {{ workshop_prefix }}-containers-101-floatingip(Public-IP: ${openstack_networking_floatingip_v2.floatingip.address})"
+}
+output "public_ip" {
+  value = openstack_networking_floatingip_v2.floatingip.address
+}
+#----------------------------------------------
+# router
+#----------------------------------------------
+# router from public to private subnet.
+resource "openstack_networking_router_v2" "router" {
+  name                = "{{ workshop_prefix }}-containers-101-router"
+  external_network_id = "{{ os_public_network_id }}"
+}
+output "openstack_networking_router_v2_router" {
+  value = "Completed ${openstack_networking_router_v2.router.name}"
+}
+#----------------------------------------------
+# private network
+#----------------------------------------------
+resource "openstack_networking_network_v2" "network" {
+  name           = "{{ workshop_prefix }}-containers-101-network"
+  admin_state_up = "true"
+}
+output "openstack_networking_network_v2_network" {
+  value = "Completed ${openstack_networking_network_v2.network.name}"
+}
+#----------------------------------------------
+# private subnet
+#----------------------------------------------
+resource "openstack_networking_subnet_v2" "subnet" {
+  depends_on      = [openstack_networking_network_v2.network]
+  name            = "{{ workshop_prefix }}-containers-101-subnet"
+  network_id      = openstack_networking_network_v2.network.id
+  cidr            = "10.0.43.0/24"
+  dns_nameservers = ["8.8.8.8","8.8.4.4"]
+  ip_version      = 4
+}
+output "openstack_networking_network_v2_subnet" {
+  value = "Completed {{ workshop_prefix }}-containers-101-subnet"
+}
+#----------------------------------------------
+# router interface to private subnet
+#----------------------------------------------
+resource "openstack_networking_router_interface_v2" "router_interface" {
+  depends_on = [openstack_networking_router_v2.router,openstack_networking_subnet_v2.subnet]
+  router_id = openstack_networking_router_v2.router.id
+  subnet_id = openstack_networking_subnet_v2.subnet.id
+}
+output "openstack_networking_router_interface_v2_router_interface" {
+  value = "Completed {{ workshop_prefix }}-containers-101-router_interface"
+}
+#----------------------------------------------
+# security group
+#----------------------------------------------
+resource "openstack_compute_secgroup_v2" "secgroup" {
+  name        = "{{ workshop_prefix }}-containers-101-secgroup"
+  description = "{{ workshop_prefix }}-containers-101-secgroup"
+
+  rule {
+    from_port   = 22
+    to_port     = 22
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
+  rule {
+    from_port   = 9090
+    to_port     = 9090
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
+  rule {
+    from_port   = 443
+    to_port     = 443
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
+  rule {
+    from_port   = 80
+    to_port     = 80
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
+}
+output "openstack_compute_secgroup_v2_secgroup" {
+  value = "Completed ${openstack_compute_secgroup_v2.secgroup.name}"
+}
+#----------------------------------------------
+# proxy instance
+#----------------------------------------------
+resource "openstack_compute_instance_v2" "proxy" {
+  depends_on      = [openstack_networking_subnet_v2.subnet,openstack_compute_secgroup_v2.secgroup]
+  name            = "{{ workshop_prefix }}.proxy.{{ domain_name }}"
+  # image_id        = "{{ os_image_id }}"
+  flavor_id       = "{{ os_image_flavor_id }}"
+  key_pair        = "{{ workshop_prefix }}-containers"
+  security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
+  user_data       = file("proxy-user-data.txt")
+
+  block_device {
+    uuid                  = "{{ os_image_id }}"
+    source_type           = "image"
+    volume_size           = "{{ ebs_root_block_size }}"
+    boot_index            = 0
+    destination_type      = "volume"
+    delete_on_termination = true
+  }
+
+  # metadata = {
+  #   this = "that"
+  # }
+
+  network {
+    name = openstack_networking_network_v2.network.name
+  }
+}
+output "openstack_compute_instance_v2_proxy" {
+  value = "Completed ${openstack_compute_instance_v2.proxy.name}"
+}
+
+resource "openstack_compute_floatingip_associate_v2" "external_ip" {
+  depends_on  = [openstack_networking_floatingip_v2.floatingip,openstack_compute_instance_v2.proxy]
+  floating_ip = openstack_networking_floatingip_v2.floatingip.address
+  instance_id = openstack_compute_instance_v2.proxy.id
+  fixed_ip    = openstack_compute_instance_v2.proxy.network.0.fixed_ip_v4
+}
+#----------------------------------------------
+# workshop node instances
+#----------------------------------------------
+resource "openstack_compute_instance_v2" "nodes" {
+  depends_on      = [openstack_networking_subnet_v2.subnet,openstack_compute_secgroup_v2.secgroup]
+  count           = var.number_nodes
+  name            = "{{ workshop_prefix }}.${count.index}.{{ domain_name }}"
+  flavor_id       = "{{ os_image_flavor_id }}"
+  key_pair        = "{{ workshop_prefix }}-containers"
+  security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
+  user_data       = file("node-user-data.txt")
+
+  block_device {
+    uuid                  = "{{ os_image_id }}"
+    source_type           = "image"
+    volume_size           = "{{ ebs_root_block_size }}"
+    boot_index            = 0
+    destination_type      = "volume"
+    delete_on_termination = true
+  }
+
+  metadata = {
+    Workshop = "{{ workshop_prefix }}"
+    sshUser  = "cloud-user"
+    Index    = count.index
+  }
+
+  network {
+    name = openstack_networking_network_v2.network.name
+  }
+
+  # tags = [
+  #   "index_${count.index}",
+  #   "workshop_fierce-test",
+  #   "sshuser_cloud-user"
+  # ]
+
+}
+output "openstack_compute_instance_v2_nodes" {
+  value = "Completed {{ workshop_prefix }}-nodes"
+}
+
+# # The public subnet is where resources connected to the internet will go
+# resource "aws_subnet" "public" {
+#     vpc_id                  = "${aws_vpc.main.id}"
+#     cidr_block              = "10.0.2.0/24"
+#     map_public_ip_on_launch = true
+#     tags = { Name = "{{ workshop_prefix }}-containers-101-public-subnet" }
+# }
+# output "aws_subnet_public" {
+#   value = "Completed {{ workshop_prefix }}-containers-101-public-subnet"
+# }
+
+# # Internet accessible route table + gateway for the public subnet
+# resource "aws_internet_gateway" "public" {
+#   vpc_id = "${aws_vpc.main.id}"
+#   tags = { Name = "{{ workshop_prefix }}-containers-101-igw" }
+# }
+# output "aws_internet_gateway_public" {
+#   value = "Completed {{ workshop_prefix }}-containers-101-igw"
+# }
+
+# resource "aws_route_table" "public" {
+#   vpc_id = "${aws_vpc.main.id}"
+#   route {
+#       cidr_block = "0.0.0.0/0"
+#       gateway_id = "${aws_internet_gateway.public.id}"
+#   }
+#   tags = { Name = "{{ workshop_prefix }}-containers-101-public-rt" }
+# }
+# output "aws_route_table_public" {
+#   value = "Completed {{ workshop_prefix }}-containers-101-public-rt"
+# }
+
+# resource "aws_route_table_association" "public" {
+#   subnet_id      = "${aws_subnet.public.id}"
+#   route_table_id = "${aws_route_table.public.id}"
+# }
+# output "aws_route_table_association_public" {
+#   value = "Completed association of ${aws_subnet.public.id} to ${aws_route_table.public.id}"
+# }
+
+# #----------------------------------------------
+# # Security Group
+# #----------------------------------------------
+# resource "aws_security_group" "containers-101-sg" {
+#   name   = "{{ workshop_prefix }}-containers-101-sg"
+#   vpc_id = "${aws_vpc.main.id}"
+
+#   egress {
+#     protocol    = -1
+#     from_port   = 0
+#     to_port     = 0
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     protocol    = "tcp"
+#     from_port   = 443
+#     to_port     = 443
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     protocol    = "tcp"
+#     from_port   = 80
+#     to_port     = 80
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     protocol    = "tcp"
+#     from_port   = 8443
+#     to_port     = 8443
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     protocol    = "tcp"
+#     from_port   = 22
+#     to_port     = 22
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     protocol    = "tcp"
+#     from_port   = 5000
+#     to_port     = 5000
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     protocol    = "tcp"
+#     from_port   = 8080
+#     to_port     = 8080
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     protocol    = "tcp"
+#     from_port   = 8888
+#     to_port     = 8888
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+#   ingress {
+#     protocol    = "tcp"
+#     from_port   = 9090
+#     to_port     = 9090
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+# }
+# output "aws_security_group_containers-101-sg" {
+#   value = "Completed {{ workshop_prefix }}-containers-101-sg"
+# }
+
+# #----------------------------------------------
+# # DNS
+# #----------------------------------------------
+# resource "aws_route53_record" "nodes" {
+#   # same number of records as instances
+#   count = "${var.number_nodes}"
+#   zone_id = "{{ zone_id }}"                       
+#   name = "{{ workshop_prefix }}.${count.index}.{{ domain_name }}"
+#   type = "A"
+#   ttl = "300"
+#   # matches up record N to instance N
+#   records = ["${element(aws_instance.node.*.public_ip, count.index)}"]
+# }
+# output "aws_route53_record_nodes" {
+#   value = "Completed {{ workshop_prefix }}.nodes.{{ domain_name }}"
+# }
+
+# #----------------------------------------------
+# # AMI : Generic Node
+# #----------------------------------------------
+# resource "aws_instance" "node" {
+#     count             = "${var.number_nodes}"
+#     ami               = "${var.aws_node_ami}"
+#     instance_type     = "${var.node_instance_type}"
+#     subnet_id         = "${aws_subnet.public.id}"
+#     key_name          = "${var.keypair}"
+#     security_groups   = [ "${aws_security_group.containers-101-sg.id}" ]
+
+#     root_block_device {
+#       volume_type     = "gp2"
+#       volume_size     = "${var.ebs_root_block_size}"
+#     }
+#     tags = {
+#         Name     = "{{ workshop_prefix }}-${count.index}"
+#         Role     = "{{ workshop_prefix }}-node"
+#         Workshop = "{{ workshop_prefix }}"
+#         sshUser  = "ec2-user"
+#         Index    = "${count.index}"
+
+#     }
+# }
+# output "aws_instance_node" {
+#   value = "Completed {{ workshop_prefix }}-node"
+# }
