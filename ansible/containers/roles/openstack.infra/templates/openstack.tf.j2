@@ -12,7 +12,6 @@ variable "aws_access_key" {}
 variable "aws_secret_key" {}
 # variable "security_group" { default = "{{ workshop_prefix }}-containers-101-sg" }
 # variable "keypair" { default = "{{ workshop_prefix }}-containers" }
-# variable "aws_region" { default = "{{ region }}" }
 #----------------------------------------------
 # API Keys
 #----------------------------------------------
@@ -116,7 +115,7 @@ output "openstack_compute_secgroup_v2_secgroup" {
 resource "openstack_compute_instance_v2" "infra" {
   depends_on      = [openstack_networking_subnet_v2.subnet,openstack_compute_secgroup_v2.secgroup]
   name            = "{{ os_infra_instance_name }}"
-  flavor_id       = "{{ os_image_flavor_id }}"
+  flavor_name     = "{{ os_flavor_name }}"
   key_pair        = "{{ workshop_prefix }}-containers"
   security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
   user_data       = file("infra-user-data.txt")
@@ -149,44 +148,44 @@ resource "openstack_compute_floatingip_associate_v2" "external_ip" {
   instance_id = openstack_compute_instance_v2.infra.id
   fixed_ip    = openstack_compute_instance_v2.infra.network.0.fixed_ip_v4
 }
-#----------------------------------------------
-# workshop node instances
-#----------------------------------------------
-resource "openstack_compute_instance_v2" "nodes" {
-  depends_on      = [openstack_networking_subnet_v2.subnet,openstack_compute_secgroup_v2.secgroup]
-  count           = var.number_nodes
-  name            = "{{ workshop_prefix }}.${count.index}.{{ domain_name }}"
-  flavor_id       = "{{ os_image_flavor_id }}"
-  key_pair        = "{{ workshop_prefix }}-containers"
-  security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
-  user_data       = file("node-user-data.txt")
+# #----------------------------------------------
+# # workshop node instances
+# #----------------------------------------------
+# resource "openstack_compute_instance_v2" "nodes" {
+#   depends_on      = [openstack_networking_subnet_v2.subnet,openstack_compute_secgroup_v2.secgroup]
+#   count           = var.number_nodes
+#   name            = "{{ workshop_prefix }}.${count.index}.{{ domain_name }}"
+#   flavor_name     = "{{ os_flavor_name }}"
+#   key_pair        = "{{ workshop_prefix }}-containers"
+#   security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
+#   user_data       = file("node-user-data.txt")
 
-  block_device {
-    uuid                  = "{{ os_image_id }}"
-    source_type           = "image"
-    volume_size           = "{{ ebs_root_block_size }}"
-    boot_index            = 0
-    destination_type      = "volume"
-    delete_on_termination = true
-  }
+#   block_device {
+#     uuid                  = "{{ os_image_id }}"
+#     source_type           = "image"
+#     volume_size           = "{{ ebs_root_block_size }}"
+#     boot_index            = 0
+#     destination_type      = "volume"
+#     delete_on_termination = true
+#   }
 
-  metadata = {
-    Workshop = "{{ workshop_prefix }}"
-    sshUser  = "{{ workshop_user }}"
-    Index    = count.index
-  }
+#   metadata = {
+#     Workshop = "{{ workshop_prefix }}"
+#     sshUser  = "{{ workshop_user }}"
+#     Index    = count.index
+#   }
 
-  network {
-    name = openstack_networking_network_v2.network.name
-  }
+#   network {
+#     name = openstack_networking_network_v2.network.name
+#   }
 
-  # tags = [
-  #   "index_${count.index}",
-  #   "workshop_fierce-test",
-  #   "sshuser_cloud-user"
-  # ]
+#   # tags = [
+#   #   "index_${count.index}",
+#   #   "workshop_fierce-test",
+#   #   "sshuser_cloud-user"
+#   # ]
 
-}
-output "openstack_compute_instance_v2_nodes" {
-  value = "Completed {{ workshop_prefix }}-nodes"
-}
+# }
+# output "openstack_compute_instance_v2_nodes" {
+#   value = "Completed {{ workshop_prefix }}-nodes"
+# }
