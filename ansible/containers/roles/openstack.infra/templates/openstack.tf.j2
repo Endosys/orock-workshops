@@ -6,6 +6,11 @@
 # us-west-2   Oregon        PV        ami-028f5e62
 
 #----------------------------------------------
+# Variables
+#----------------------------------------------
+variable "aws_access_key" {}
+variable "aws_secret_key" {}
+#----------------------------------------------
 # API Keys
 #----------------------------------------------
 provider "openstack" {
@@ -164,7 +169,7 @@ data "aws_route53_zone" "selected" {
 }
 
 output "aws_route53_zone_selected" {
-  value = "Completed ${aws_route53_zone.selected}"
+  value = data.aws_route53_zone.selected
 }
 # #----------------------------------------------
 # # workshop node instances
