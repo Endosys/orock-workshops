@@ -17,6 +17,7 @@ workshop_password:                "redhat!@#"
 ################################################################################
 # openstack.infra          |      .terraform working dir 
 terraform_working_dir:            "{{ lookup('env','PWD') }}/terraform"
+os_cloud:                         ""
 os_region:                        "us-east-1"
 os_flavor_name:                   "t1.medium"   # flavor = AWS instance type
 os_image_name:                    "Red Hat Enterprise Linux 8.1 (BYOL)"
@@ -24,9 +25,10 @@ os_key_name:                      "{{ workshop_prefix }}-sshkey"
 os_external_network_name:         "external-floating-ips"
 os_private_network_name:          "{{ workshop_prefix }}-private-network"
 os_private_subnet_name:           "{{ workshop_prefix }}-private-subnet"
+os_router_name:                   "{{ workshop_prefix }}-router"
 os_cidr:                          ""
 os_sg_name:                       "{{ workshop_prefix }}-secgroup"
-os_sg_ports:                      ["22" "9090" "443" "80"]
+os_sg_ports:                      ["22","9090","443","80"]
 os_infra_instance_private_ip:     "{{ os_cidr | ipaddr('last_usable') }}"
 os_infra_instance_name:           "{{ workshop_prefix }}.infra.{{ domain_name }}"
 # aws.infra                |      AWS API KEYS
@@ -34,6 +36,7 @@ aws_access_key:                   ""
 aws_secret_key:                   ""
 # aws.infra                |      AWS Route 53
 aws_zone_id:                      ""
+aws_route53_zone_name:            ""
 aws_region:                       "us-east-2"    # AWS Region, configures ec2.ini too
 ebs_root_block_size:              50
 

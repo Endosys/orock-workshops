@@ -6,20 +6,10 @@
 # us-west-2   Oregon        PV        ami-028f5e62
 
 #----------------------------------------------
-# Variables
-#----------------------------------------------
-variable "aws_access_key" {}
-variable "aws_secret_key" {}
-# variable "security_group" { default = "{{ workshop_prefix }}-containers-101-sg" }
-# variable "keypair" { default = "{{ workshop_prefix }}-containers" }
-#----------------------------------------------
 # API Keys
 #----------------------------------------------
 provider "openstack" {
-    cloud = "openstack"
-#    access_key = "${var.aws_access_key}"
-#    secret_key = "${var.aws_secret_key}"
-#    region     = "${var.aws_region}"
+    cloud = "{{ os_cloud }}"
 }
 #----------------------------------------------
 # get image id based on name 
@@ -61,7 +51,7 @@ output "public_ip" {
 # router from public to private subnet.
 resource "openstack_networking_router_v2" "router" {
   name                = "{{ os_router_name }}"
-  external_network_id = "openstack_networking_network_v2.external-network.id"
+  external_network_id = data.openstack_networking_network_v2.external-network.id
 }
 output "openstack_networking_router_v2_router" {
   value = "Completed ${openstack_networking_router_v2.router.name}"
@@ -84,7 +74,7 @@ resource "openstack_networking_subnet_v2" "private-subnet" {
   name            = "{{ os_private_subnet_name }}"
   network_id      = openstack_networking_network_v2.private-network.id
   cidr            = "{{ os_cidr }}"
-  dns_nameservers = ["os_infra_instance_private_ip","8.8.8.8","8.8.4.4"]
+  dns_nameservers = ["{{ os_infra_instance_private_ip }}","8.8.8.8","8.8.4.4"]
   ip_version      = 4
 }
 output "openstack_networking_network_v2_subnet" {
@@ -128,7 +118,7 @@ resource "openstack_compute_instance_v2" "infra" {
   depends_on      = [openstack_networking_subnet_v2.private-subnet,openstack_compute_secgroup_v2.secgroup]
   name            = "{{ os_infra_instance_name }}"
   flavor_name     = "{{ os_flavor_name }}"
-  key_pair        = "{{ workshop_prefix }}-containers"
+  key_pair        = "{{ os_key_name }}"
   security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
   user_data       = file("infra-user-data.txt")
 
@@ -148,12 +138,9 @@ resource "openstack_compute_instance_v2" "infra" {
 
   network {
     name = openstack_networking_network_v2.private-network.name
-    fixed_ip_v4 = "{{ os_infra_instance_private_ip }}
+    fixed_ip_v4 = "{{ os_infra_instance_private_ip }}"
   }
 
-  network {
-    name = openstack_networking_network_external-network.name
-  }
 }
 output "openstack_compute_instance_v2_infra" {
   value = "Completed ${openstack_compute_instance_v2.infra.name}"
@@ -163,7 +150,21 @@ resource "openstack_compute_floatingip_associate_v2" "external_ip" {
   depends_on  = [openstack_networking_floatingip_v2.floatingip,openstack_compute_instance_v2.infra]
   floating_ip = openstack_networking_floatingip_v2.floatingip.address
   instance_id = openstack_compute_instance_v2.infra.id
-  fixed_ip    = openstack_compute_instance_v2.infra.network.1.fixed_ip_v4
+  fixed_ip    = openstack_compute_instance_v2.infra.network.0.fixed_ip_v4
+}
+
+provider "aws" {
+    access_key = "{{ aws_access_key }}"
+    secret_key = "{{ aws_secret_key }}"
+    region     = "{{ aws_region }}"
+}
+
+data "aws_route53_zone" "selected" {
+  name         = "{{ aws_route53_zone_name }}"
+}
+
+output "aws_route53_zone_selected" {
+  value = "Completed ${aws_route53_zone.selected}"
 }
 # #----------------------------------------------
 # # workshop node instances

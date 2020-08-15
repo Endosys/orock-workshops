@@ -5,10 +5,10 @@
   become: yes
   hosts: infra
   remote_user: "{{ system_user }}"
-    tasks:
-    - name: Unsubscribe RHN
-      redhat_subscription:
-          state: absent
+  tasks:
+  - name: Unsubscribe RHN
+    redhat_subscription:
+      state: absent
 
 - name: Remove infrastructure using Terraform
   hosts: local_target
