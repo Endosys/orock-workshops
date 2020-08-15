@@ -2,57 +2,56 @@
 #---------------------------------------------------
 #  Hosts instance  Creation
 #---------------------------------------------------
-- name: Add infra instance to Ansible Hosts File
-  lineinfile:
-    path: "{{ inventory_working_dir }}/hosts"
-    insertafter: '^\[infra\]'
-    line: "{{workshop_prefix}}.infra.{{ domain_name }}"
+- name: Template Ansible Hosts File
+  template:
+    dest: "{{ inventory_working_dir }}/hosts"
+    src: hosts.j2
   tags:
     - tf_create
 #---------------------------------------------------
 #   Get public network
 #---------------------------------------------------
-# - name: get openstack network info
-#   os_networks_info:
-#     cloud: openstack
-#   register: network_result
-# - name: set openstack public network id
-#   set_fact:
-#     os_public_network_id: "{{ item.id }}"
-#     os_public_network_name: "{{ item.name }}"
-#   loop: "{{ network_result.openstack_networks }}"
-#   when: item.name  == "{{ os_external_network_name }}"
-# - name: show openstack public network id
-#   debug:
-#     var: os_public_network_id
+- name: get openstack network info
+  os_networks_info:
+    cloud: openstack
+  register: network_result
+- name: set openstack public network id
+  set_fact:
+    os_public_network_id: "{{ item.id }}"
+    os_public_network_name: "{{ item.name }}"
+  loop: "{{ network_result.openstack_networks }}"
+  when: item.name  == "external-floating-ips"
+- name: show openstack public network id
+  debug:
+    var: os_public_network_id
 #---------------------------------------------------
 #   Get image id
 #---------------------------------------------------
-# - name: get openstack image id
-#   os_image_info:
-#     cloud: openstack
-#     image: "{{ os_image_name }}"
-#   register: image_result
-# - name: set openstack image id
-#   set_fact:
-#     os_image_id: "{{ image_result.openstack_image.id }}"
-# - name: show openstack image id
-#   debug:
-#     var: os_image_id
+- name: get openstack image id
+  os_image_info:
+    cloud: openstack
+    image: "Red Hat Enterprise Linux 8.1 (BYOL)"
+  register: image_result
+- name: set openstack image id
+  set_fact:
+    os_image_id: "{{ image_result.openstack_image.id }}"
+- name: show openstack image id
+  debug:
+    var: os_image_id
 #---------------------------------------------------
 #   Get image flavor id
 #---------------------------------------------------
-# - name: get openstack image flavor id
-#   os_flavor_info:
-#     cloud: openstack
-#     name: "{{ os_flavor_name }}"
-#   register: flavor_result
-# - name: set openstack image flavor id
-#   set_fact:
-#     os_image_flavor_id: "{{ flavor_result.openstack_flavors[0].id }}"
-# - name: show openstack image flavor id
-#   debug:
-#     var: os_image_flavor_id
+- name: get openstack image flavor id
+  os_flavor_info:
+    cloud: openstack
+    name: "t1.medium"
+  register: flavor_result
+- name: set openstack image flavor id
+  set_fact:
+    os_image_flavor_id: "{{ flavor_result.openstack_flavors[0].id }}"
+- name: show openstack image flavor id
+  debug:
+    var: os_image_flavor_id
 #---------------------------------------------------
 #   INI Creation
 #---------------------------------------------------
@@ -65,13 +64,13 @@
 #  SSH Key
 #---------------------------------------------------
 - stat:
-    path: "{{ terraform_working_dir }}/{{ os_key_name }}"
+    path: "{{ terraform_working_dir }}/{{ workshop_prefix }}-containers"
   register: terraform_ssh_key
 
 - name: Check for existing key and remove
   os_keypair:
     cloud: openstack
-    name: "{{ os_key_name }}"
+    name: "{{ workshop_prefix }}-containers"
     region_name: "{{ os_region }}"
     state: absent
   when: terraform_ssh_key.stat.exists == false
@@ -81,7 +80,7 @@
 - name: Create openstack keypair
   os_keypair:
     cloud: openstack
-    name: "{{ os_key_name }}"
+    name: "{{ workshop_prefix }}-containers"
     region_name: "{{ os_region }}"
     state: present
   register: openstack_key
@@ -104,7 +103,7 @@
 - name: Create ssh keypair
   copy:
     content: "{{ openstack_key.key.private_key }}"
-    dest: "{{ terraform_working_dir }}/{{ os_key_name }}"
+    dest: "{{ terraform_working_dir }}/{{ workshop_prefix }}-containers"
     mode: 0400
   when: terraform_ssh_key.stat.exists == false
   tags:
@@ -178,3 +177,20 @@
   lineinfile:
     path: /etc/hosts
     line: "{{ openstack_public_ip }} {{ workshop_prefix }}.infra.{{ domain_name }}"
+
+#- name: configure nginx
+#- name: Run Terraform ( < 0.11.0 )
+#  command: terraform apply
+#  args:
+#    chdir: "{{ terraform_working_dir }}"
+#  when: tf_version is version('0.11.0', '<')
+#  tags:
+#    - tf_create
+
+#- name: Run Terraform ( >= 0.11.0 )
+#  command: terraform apply -auto-approve
+#  args:
+#    chdir: "{{ terraform_working_dir }}" 
+#  when: tf_version is version('0.11.0', '>=')
+#  tags:
+#    - tf_create

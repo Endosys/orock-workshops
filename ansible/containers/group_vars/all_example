@@ -8,56 +8,40 @@
 
 # Ensure that the name does not include special characters such as underscores, etc.
 workshop_prefix:                  "containers101"
-
-
-
+domain_name:                      ""
+number_nodes:                     "2"            # Student Nodes
+workshop_user:                    "cloud-user"
+workshop_password:                "redhat!@#"
 ################################################################################
 # ANSIBLE ROLE KEY         |      VALUE
 ################################################################################
-# aws.infra                |      .terraform working dir 
-terraform_working_dir:            "{{ lookup('env','PWD') }}/.redhatgov"
+# openstack.infra          |      .terraform working dir 
+terraform_working_dir:            "{{ lookup('env','PWD') }}/terraform"
+os_region:                        "us-east-1"
+os_flavor_name:                   "t1.medium"   # flavor = AWS instance type
+os_image_name:                    "Red Hat Enterprise Linux 8.1 (BYOL)"
+os_key_name:                      "{{ workshop_prefix }}-sshkey"
+os_external_network_name:         "external-floating-ips"
+os_private_network_name:          "{{ workshop_prefix }}-private-network"
+os_private_subnet_name:           "{{ workshop_prefix }}-private-subnet"
+os_cidr:                          ""
+os_sg_name:                       "{{ workshop_prefix }}-secgroup"
+os_sg_ports:                      ["22" "9090" "443" "80"]
+os_infra_instance_private_ip:     "{{ os_cidr | ipaddr('last_usable') }}"
+os_infra_instance_name:           "{{ workshop_prefix }}.infra.{{ domain_name }}"
 # aws.infra                |      AWS API KEYS
 aws_access_key:                   ""
 aws_secret_key:                   ""
 # aws.infra                |      AWS Route 53
-domain_name:                      ""
-zone_id:                          ""
-# aws.infra                |      AWS Terraform Vars
-#number_tower_nodes:               "2"            # Tower Nodes
-number_nodes:                     "2"            # Student Nodes
-#tower_instance_type:              "t2.medium"    # Tower Instance Size
-node_instance_type:               "t2.small"     # Student Instance Size
-region:                           "us-east-1"    # AWS Region, configures ec2.ini too
+aws_zone_id:                      ""
+aws_region:                       "us-east-2"    # AWS Region, configures ec2.ini too
 ebs_root_block_size:              50
-# aws.infra                |      AWS AMI IDs
+
 #-------------------------------------------------------------------------------
-# us-east-1
-# ami_id:                         "ami-c998b6b2" # RHEL 7.4
-# ami_id:                         "ami-0d70a070" # RHEL 7.5:q 
-# ami_id: "ami-098f16afa9edf40be"  # RHEL-8.2.0_HVM-20200423-x86_64-0-Hourly2-GP2
-# us-east-2
-# ami_id:                         "ami-cfdafaaa" # RHEL 7.4 
-# ami_id:                         "ami-8f2617ea" # RHEL 7.5
-ami_id: "ami-0a54aef4ef3b5f881"  # RHEL-8.2.0_HVM-20200423-x86_64-0-Hourly2-GP2
-rhel_ver:                         "rhel8"
-#-------------------------------------------------------------------------------
-# subscription_manager     |      Red Hat Subscription via Cloud Access
-cloud_access:                      true
 # subscription_manager     |      Red Hat Subscription via username & password
-username:                         ""
-password:                         ""
-pool_id:                          ""
-# subscription_manager     |      Red Hat Subscription via activation keys
-rhsm_activationkey:               ""
-rhsm_org_id:                      ""
-#-------------------------------------------------------------------------------
-# LetsEncrypt              |      email
-letsencrypt_email:                "someone@redhat.com"
-letsencrypt:                      false
-#--------------------------------------------------------------------------------------
-# wetty                    |      password
-workshop_password:                "redhat!@#"
-#--------------------------------------------------------------------------------------
+rhn_username:                     ""
+rhn_password:                     ""
+rhn_pool_id:                      ""
 
 ################################################################################
 # ANSIBLE config           |      VALUE
@@ -65,12 +49,7 @@ workshop_password:                "redhat!@#"
 # Dynamic Inventory 
 inventory_working_dir:            "{{ lookup('env','PWD') }}/inventory"
 # Ansible SSH Key Location |      SSH Key Vars
-ssh_key_path:                     "{{ terraform_working_dir }}/{{ workshop_prefix }}-containers"
-ansible_ssh_private_key_file:     "{{ terraform_working_dir }}/{{ workshop_prefix }}-containers"
-system_user:                      "ec2-user"    # AWS
-# Here is the list of users for codiad.  It is suggested to use the same password as you specified as the `workshop_password`, above.  Use the following algorithm to hash passwords:
-# $ php -r 'print_r(sha(md5("password")));echo "\n";'
-#codiad_users:
-#- { name: "ec2-user", pass: "0a161200ebeadfd24001682f05f16359b74bb55f" }
-# system_user:                     "vagrant"    # vagrant
-    
+ssh_key_path:                     "{{ terraform_working_dir }}/{{ os_key_name }}"
+ansible_ssh_private_key_file:     "{{ terraform_working_dir }}/{{ os_key_name }}"
+system_user:                      "{{ workshop_user }}"    # AWS
+ansible_ssh_user:                 "{{ system_user }}"

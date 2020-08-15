@@ -352,7 +352,7 @@ MigrationBackup/
 # vagrant up files
 .vagrant/
 
-ansible.cfg
+#ansible.cfg
 orock-project.yml
 test-workshop.yml
 unregister.sh
