@@ -36,6 +36,15 @@ output "image_id" {
   value = data.openstack_images_image_v2.image.id
 }
 #----------------------------------------------
+# get external network based on name
+#----------------------------------------------
+data "openstack_networking_network_v2" "external-network" {
+  name = "{{ os_external_network_name }}"
+}
+output "external-network_id" {
+  value = data.openstack_networking_network_v2.external-network.id
+}
+#----------------------------------------------
 # external floating ip
 #----------------------------------------------
 # public external floating ip.
@@ -51,8 +60,8 @@ output "public_ip" {
 #----------------------------------------------
 # router from public to private subnet.
 resource "openstack_networking_router_v2" "router" {
-  name                = "{{ workshop_prefix }}-router"
-  external_network_id = "openstack_networking_network_v2.{{ os_external_network_name }}.id"
+  name                = "{{ os_router_name }}"
+  external_network_id = "openstack_networking_network_v2.external-network.id"
 }
 output "openstack_networking_router_v2_router" {
   value = "Completed ${openstack_networking_router_v2.router.name}"
@@ -139,6 +148,11 @@ resource "openstack_compute_instance_v2" "infra" {
 
   network {
     name = openstack_networking_network_v2.private-network.name
+    fixed_ip_v4 = "{{ os_infra_instance_private_ip }}
+  }
+
+  network {
+    name = openstack_networking_network_external-network.name
   }
 }
 output "openstack_compute_instance_v2_infra" {
@@ -149,7 +163,7 @@ resource "openstack_compute_floatingip_associate_v2" "external_ip" {
   depends_on  = [openstack_networking_floatingip_v2.floatingip,openstack_compute_instance_v2.infra]
   floating_ip = openstack_networking_floatingip_v2.floatingip.address
   instance_id = openstack_compute_instance_v2.infra.id
-  fixed_ip    = openstack_compute_instance_v2.infra.network.0.fixed_ip_v4
+  fixed_ip    = openstack_compute_instance_v2.infra.network.1.fixed_ip_v4
 }
 # #----------------------------------------------
 # # workshop node instances
