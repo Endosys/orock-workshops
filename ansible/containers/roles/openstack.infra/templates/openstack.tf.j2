@@ -10,13 +10,9 @@
 #----------------------------------------------
 variable "aws_access_key" {}
 variable "aws_secret_key" {}
-variable "security_group" { default = "{{ workshop_prefix }}-containers-101-sg" }
-variable "keypair" { default = "{{ workshop_prefix }}-containers" }
-variable "node_instance_type" { default = "{{ node_instance_type }}" } 
-variable "aws_region" { default = "{{ region }}" }
-variable "ebs_root_block_size" { default = "50" }
-variable "aws_node_ami" { default = "{{ ami_id }}" }
-variable "number_nodes" { default = "{{ number_nodes }}" }
+# variable "security_group" { default = "{{ workshop_prefix }}-containers-101-sg" }
+# variable "keypair" { default = "{{ workshop_prefix }}-containers" }
+# variable "aws_region" { default = "{{ region }}" }
 #----------------------------------------------
 # API Keys
 #----------------------------------------------
