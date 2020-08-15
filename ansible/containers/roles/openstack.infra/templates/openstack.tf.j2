@@ -22,7 +22,7 @@ provider "openstack" {
 #    region     = "${var.aws_region}"
 }
 #----------------------------------------------
-# image 
+# get image id based on name 
 #----------------------------------------------
 data "openstack_images_image_v2" "image" {
   name        = "{{ os_image_name }}"
@@ -31,6 +31,9 @@ data "openstack_images_image_v2" "image" {
   properties = {
     key = "value"
   }
+}
+output "image_id" {
+  value = data.openstack_images_image_v2.image.id
 }
 #----------------------------------------------
 # external floating ip
@@ -121,7 +124,7 @@ resource "openstack_compute_instance_v2" "infra" {
   user_data       = file("infra-user-data.txt")
 
   block_device {
-    uuid                  = openstack_images_image_v2.image.id
+    uuid                  = data.openstack_images_image_v2.image.id
     source_type           = "image"
     volume_size           = "{{ ebs_root_block_size }}"
     boot_index            = 0
