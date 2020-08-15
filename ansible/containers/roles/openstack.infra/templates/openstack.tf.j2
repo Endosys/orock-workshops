@@ -113,7 +113,7 @@ output "openstack_compute_secgroup_v2_secgroup" {
 # infra instance
 #----------------------------------------------
 resource "openstack_compute_instance_v2" "infra" {
-  depends_on      = [openstack_networking_subnet_v2.subnet,openstack_compute_secgroup_v2.secgroup]
+  depends_on      = [openstack_networking_subnet_v2.private-subnet,openstack_compute_secgroup_v2.secgroup]
   name            = "{{ os_infra_instance_name }}"
   flavor_name     = "{{ os_flavor_name }}"
   key_pair        = "{{ workshop_prefix }}-containers"
@@ -135,7 +135,7 @@ resource "openstack_compute_instance_v2" "infra" {
   }
 
   network {
-    name = openstack_networking_network_v2.network.name
+    name = openstack_networking_network_v2.private-network.name
   }
 }
 output "openstack_compute_instance_v2_infra" {
@@ -152,7 +152,7 @@ resource "openstack_compute_floatingip_associate_v2" "external_ip" {
 # # workshop node instances
 # #----------------------------------------------
 # resource "openstack_compute_instance_v2" "nodes" {
-#   depends_on      = [openstack_networking_subnet_v2.subnet,openstack_compute_secgroup_v2.secgroup]
+#   depends_on      = [openstack_networking_subnet_v2.private-subnet,openstack_compute_secgroup_v2.secgroup]
 #   count           = var.number_nodes
 #   name            = "{{ workshop_prefix }}.${count.index}.{{ domain_name }}"
 #   flavor_name     = "{{ os_flavor_name }}"
@@ -161,7 +161,7 @@ resource "openstack_compute_floatingip_associate_v2" "external_ip" {
 #   user_data       = file("node-user-data.txt")
 
 #   block_device {
-#     uuid                  = "{{ os_image_id }}"
+#     uuid                  = openstack_images_image_v2.image.id
 #     source_type           = "image"
 #     volume_size           = "{{ ebs_root_block_size }}"
 #     boot_index            = 0
@@ -176,7 +176,7 @@ resource "openstack_compute_floatingip_associate_v2" "external_ip" {
 #   }
 
 #   network {
-#     name = openstack_networking_network_v2.network.name
+#     name = openstack_networking_network_v2.private-network.name
 #   }
 
 #   # tags = [
