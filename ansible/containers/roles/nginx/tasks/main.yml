@@ -1,12 +1,5 @@
 ---
 # tasks file for nginx
-- name: wait for proxy to be ready 
-  wait_for:
-    host: "{{ os_infra_instance_name }}"
-    port: 22
-    state: started
-    timeout: 300
-
 - name: add nginx
   dnf:
     name: nginx

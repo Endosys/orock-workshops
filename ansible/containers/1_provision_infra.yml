@@ -11,9 +11,32 @@
 - name: Setup dynamic dns for infra
   hosts: infra
   become: true
-  roles:
-  - subscription_manager
-  - dns
-  - nginx
+  tasks:
+  - name: wait for proxy to be ready 
+    wait_for:
+      host: "{{ os_infra_instance_name }}"
+      port: 22
+      state: started
+      timeout: 300
+
+  - include_role:
+      name: subscription_manager
+
+  - name: add firewalld
+    dnf:
+      name: firewalld
+      state: latest
+
+  - name: start and enable firewalld
+    service:
+      name: firewalld
+      state: restarted
+      enabled: true
+  
+  - include_role:
+      name: dns
+
+  - include_role:
+      name: nginx
 
 ...
