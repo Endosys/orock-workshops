@@ -11,6 +11,7 @@
 - name: Setup dynamic dns for infra
   hosts: infra
   become: true
+  gather_facts: false
   tasks:
   - name: wait for infra to be ready 
     wait_for:
@@ -18,6 +19,9 @@
       port: 22
       state: started
       timeout: 300
+
+  - name: Gather facts for first time
+    setup:
 
   - include_role:
       name: subscription_manager
