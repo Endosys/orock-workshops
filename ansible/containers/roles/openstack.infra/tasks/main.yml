@@ -123,10 +123,10 @@
   tags:
     - tf_create
 
-# - name: Template infra-user-data
-#   template: dest="{{ terraform_working_dir }}/infra-user-data.txt"  src=infra-user-data.txt.j2
-#   tags:
-#     - tf_create
+- name: Template infra-user-data
+  template: dest="{{ terraform_working_dir }}/infra-user-data.txt"  src=infra-user-data.txt.j2
+  tags:
+    - tf_create
 
 # - name: Template node-user-data
 #   template: dest="{{ terraform_working_dir }}/node-user-data.txt"  src=node-user-data.txt.j2

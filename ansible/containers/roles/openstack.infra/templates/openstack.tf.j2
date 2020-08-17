@@ -125,7 +125,7 @@ resource "openstack_compute_instance_v2" "infra" {
   flavor_name     = "{{ os_flavor_name }}"
   key_pair        = "{{ os_key_name }}"
   security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
-  # user_data       = file("infra-user-data.txt")
+  user_data       = file("infra-user-data.txt")
 
   block_device {
     uuid                  = data.openstack_images_image_v2.image.id

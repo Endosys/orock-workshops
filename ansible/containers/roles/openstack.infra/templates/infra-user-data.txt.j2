@@ -1,11 +1,11 @@
 #cloud-config
-hostname: {{ workshop_prefix }}.infra.{{ domain_name }}
-fqdn: {{ workshop_prefix }}.infra.{{ domain_name }}
+#hostname: {{ workshop_prefix }}.infra.{{ domain_name }}
+#fqdn: {{ workshop_prefix }}.infra.{{ domain_name }}
 runcmd:
 - systemctl enable --now cockpit.socket
 - echo "{{ workshop_password }}" | passwd --stdin cloud-user
-- nmcli con mod "System eth0" ipv4.dns "8.8.8.8 8.8.4.4"
-- systemctl restart NetworkManager
+#- nmcli con mod "System eth0" ipv4.dns "8.8.8.8 8.8.4.4"
+#- systemctl restart NetworkManager
 - dnf remove rh-amazon-rhui-client
 - subscription-manager register --username={{ rhn_username }} --password={{ rhn_password }} --force
 - subscription-manager attach --pool={{ rhn_pool_id }}
