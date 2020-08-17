@@ -1,0 +1,29 @@
+---
+# tasks file for nginx
+- name: wait for proxy to be ready 
+  wait_for:
+    host: "{{ os_infra_instance_name }}"
+    port: 22
+    state: started
+    timeout: 300
+
+- name: add nginx
+  dnf:
+    name: nginx
+    state: latest
+
+- name: set firewall to allow service
+  firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop:
+  - http
+  - https
+
+- name: start and enable nginx
+  service:
+    name: nginx
+    state: restarted
+    enabled: true

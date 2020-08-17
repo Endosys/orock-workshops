@@ -8,4 +8,10 @@
   roles:
   - { role: openstack.infra, tags: ["tf_create"] }
 
+- name: Setup dynamic dns for infra
+  hosts: infra
+  roles:
+  - dns
+  - nginx
+
 ...
