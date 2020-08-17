@@ -168,6 +168,18 @@ data "aws_route53_zone" "selected" {
   name         = "{{ aws_route53_zone_name }}"
 }
 
+resource "aws_route53_record" "infra" {
+  zone_id = aws_route53_zone.selected.id                       
+  name = "{{ os_infra_instance_name }}"
+  type = "A"
+  ttl = "300"
+  # matches up record N to instance N
+  records = ["${openstack_compute_instance_v2.infra.public_ip}"]
+ }
+output "aws_route53_record_infra" {
+  value = "Completed Adding Route53 Record ${aws_route53_record.infra.name}"
+}
+
 output "aws_route53_zone_selected" {
   value = data.aws_route53_zone.selected
 }
