@@ -48,7 +48,7 @@
         pool: "{{ rhn_pool_id }}"
         force_register: true
         state: present
-  when: sm_result.failed and not rhsm_activationkey
+  when: sm_result.failed
   tags:
     - rhel
 
