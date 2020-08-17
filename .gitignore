@@ -356,3 +356,4 @@ MigrationBackup/
 orock-project.yml
 test-workshop.yml
 unregister.sh
+terraform/

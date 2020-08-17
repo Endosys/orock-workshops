@@ -10,6 +10,7 @@
 
 - name: Setup dynamic dns for infra
   hosts: infra
+  become: true
   roles:
   - subscription_manager
   - dns
