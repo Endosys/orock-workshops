@@ -11,6 +11,7 @@
 - name: Setup dynamic dns for infra
   hosts: infra
   roles:
+  - subscription_manager
   - dns
   - nginx
 
