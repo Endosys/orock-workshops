@@ -12,7 +12,7 @@
   hosts: infra
   become: true
   tasks:
-  - name: wait for proxy to be ready 
+  - name: wait for infra to be ready 
     wait_for:
       host: "{{ os_infra_instance_name }}"
       port: 22
