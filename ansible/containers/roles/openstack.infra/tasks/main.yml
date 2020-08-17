@@ -10,58 +10,6 @@
   tags:
     - tf_create
 #---------------------------------------------------
-#   Get public network
-#---------------------------------------------------
-# - name: get openstack network info
-#   os_networks_info:
-#     cloud: openstack
-#   register: network_result
-# - name: set openstack public network id
-#   set_fact:
-#     os_public_network_id: "{{ item.id }}"
-#     os_public_network_name: "{{ item.name }}"
-#   loop: "{{ network_result.openstack_networks }}"
-#   when: item.name  == "{{ os_external_network_name }}"
-# - name: show openstack public network id
-#   debug:
-#     var: os_public_network_id
-#---------------------------------------------------
-#   Get image id
-#---------------------------------------------------
-# - name: get openstack image id
-#   os_image_info:
-#     cloud: openstack
-#     image: "{{ os_image_name }}"
-#   register: image_result
-# - name: set openstack image id
-#   set_fact:
-#     os_image_id: "{{ image_result.openstack_image.id }}"
-# - name: show openstack image id
-#   debug:
-#     var: os_image_id
-#---------------------------------------------------
-#   Get image flavor id
-#---------------------------------------------------
-# - name: get openstack image flavor id
-#   os_flavor_info:
-#     cloud: openstack
-#     name: "{{ os_flavor_name }}"
-#   register: flavor_result
-# - name: set openstack image flavor id
-#   set_fact:
-#     os_image_flavor_id: "{{ flavor_result.openstack_flavors[0].id }}"
-# - name: show openstack image flavor id
-#   debug:
-#     var: os_image_flavor_id
-#---------------------------------------------------
-#   INI Creation
-#---------------------------------------------------
-# - name: Template EC2 INI File
-#   template: dest="{{ inventory_working_dir }}/ec2.ini"  src=ec2.ini.j2
-#   tags:
-#     - tf_create
-
-#---------------------------------------------------
 #  SSH Key
 #---------------------------------------------------
 - stat:
@@ -173,8 +121,3 @@
     openstack_public_ip: "{{ terraform_template_output.outputs.public_ip.value }}"
   tags:
     - tf_create
-
-# - name: Add public ip to hosts file
-#   lineinfile:
-#     path: /etc/hosts
-#     line: "{{ openstack_public_ip }} {{ workshop_prefix }}.infra.{{ domain_name }}"
