@@ -31,6 +31,7 @@ os_sg_name:                       "{{ workshop_prefix }}-secgroup"
 os_sg_ports:                      ["22","9090","443","80"]
 os_infra_instance_private_ip:     "{{ os_cidr | ipaddr('last_usable') }}"
 os_infra_instance_name:           "{{ workshop_prefix }}.infra.{{ domain_name }}"
+os_dns:                           ["{{ os_infra_instance_private_ip }}","8.8.8.8","8.8.4.4"]
 # aws.infra                |      AWS API KEYS
 aws_access_key:                   ""
 aws_secret_key:                   ""

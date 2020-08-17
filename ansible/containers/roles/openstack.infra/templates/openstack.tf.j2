@@ -79,7 +79,7 @@ resource "openstack_networking_subnet_v2" "private-subnet" {
   name            = "{{ os_private_subnet_name }}"
   network_id      = openstack_networking_network_v2.private-network.id
   cidr            = "{{ os_cidr }}"
-  dns_nameservers = ["{{ os_infra_instance_private_ip }}","8.8.8.8","8.8.4.4"]
+  dns_nameservers = "{{ os_dns }}"
   ip_version      = 4
 }
 output "openstack_networking_network_v2_subnet" {
@@ -157,7 +157,9 @@ resource "openstack_compute_floatingip_associate_v2" "external_ip" {
   instance_id = openstack_compute_instance_v2.infra.id
   fixed_ip    = openstack_compute_instance_v2.infra.network.0.fixed_ip_v4
 }
-
+#----------------------------------------------
+# aws route53 record
+#----------------------------------------------
 provider "aws" {
     access_key = "{{ aws_access_key }}"
     secret_key = "{{ aws_secret_key }}"
@@ -174,15 +176,13 @@ resource "aws_route53_record" "infra" {
   type = "A"
   ttl = "300"
   # matches up record N to instance N
-  records = ["${openstack_compute_instance_v2.infra.public_ip}"]
- }
+  records = ["${openstack_networking_floatingip_v2.floatingip.address}"]
+}
+
 output "aws_route53_record_infra" {
   value = "Completed Adding Route53 Record ${aws_route53_record.infra.name}"
 }
 
-output "aws_route53_zone_selected" {
-  value = data.aws_route53_zone.selected
-}
 # #----------------------------------------------
 # # workshop node instances
 # #----------------------------------------------
