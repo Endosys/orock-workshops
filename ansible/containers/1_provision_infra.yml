@@ -22,7 +22,19 @@
 
   - name: Gather facts for first time
     setup:
-
+#############################################################
+# this is required based on ORock settings 
+#############################################################
+  - name: Remove clout-init config from Networkmanager
+    file:
+      path: /etc/NetworkManager/conf.d/99-cloud-init.conf
+      state: absent
+  - name: restart NetworkManager for subnet DNS
+    systemd:
+      name: NetworkManager
+      state: restarted
+      daemon_reload: true
+#############################################################
   - include_role:
       name: subscription_manager
 
