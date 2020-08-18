@@ -62,13 +62,13 @@ raytheon_container101_workshop = %{
   echo 'cd /home/vagrant/src/orock-workshops/ansible/containers/' >> ~/.bash_profile
   echo "export AWS_ACCESS_KEY_ID=$(grep aws_access_key ~/all.yml | awk -F'\"' '{print $2}')" >> ~/.bash_profile
   echo "export AWS_SECRET_ACCESS_KEY=$(grep aws_secret_key ~/all.yml | awk -F'\"' '{print $2}')" >> ~/.bash_profile
-  #echo 'virtualenv --system-site-packages ansible' >> ~/.bash_profile
-  #echo 'source ansible/bin/activate' >> ~/.bash_profile
-  #echo 'pip install boto boto3' >> ~/.bash_profile
-  #echo 'pip install python-openstackclient' >> ~/.bash_profile
+  # echo 'virtualenv --system-site-packages ansible' >> ~/.bash_profile
+  # echo 'source ansible/bin/activate' >> ~/.bash_profile
+  # echo 'pip install boto boto3' >> ~/.bash_profile
+  # echo 'pip install python-openstackclient' >> ~/.bash_profile
   # ensure vagrant user can write to /etc/hosts
-  sudo setfacl -m u:vagrant:rwx /etc
-  sudo setfacl -m u:vagrant:rw /etc/hosts
+  # sudo setfacl -m u:vagrant:rwx /etc
+  # sudo setfacl -m u:vagrant:rw /etc/hosts
 }
 
 unregister_script = %{
