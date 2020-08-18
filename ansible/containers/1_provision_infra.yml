@@ -13,12 +13,16 @@
   become: true
   gather_facts: false
   tasks:
-  - name: wait for infra to be ready 
-    wait_for:
-      host: "{{ os_infra_instance_name }}"
-      port: 22
-      state: started
+  - name: wait for infra to be ready
+    wait_for_connection:
+      delay: 15
       timeout: 300
+  # - name: wait for infra to be ready 
+  #   wait_for:
+  #     host: "{{ os_infra_instance_name }}"
+  #     port: 22
+  #     state: started
+  #     timeout: 300
 
   - name: Gather facts for first time
     setup:
