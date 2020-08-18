@@ -9,28 +9,20 @@
   - { role: openstack.infra, tags: ["tf_create"] }
 
   post_tasks:
-  - name: Gather facts
-    setup:
-  - name: wait for infra to be ready
-    wait_for_connection:
-      delay: 15
+  - name: wait for infra to be ready 
+    wait_for:
+      host: "{{ item }}"
+      port: 22
+      state: started
+      delay: 30
       timeout: 300
     with_items: "{{ groups.infra }}"
 
 - name: Setup nginx and dynamic dns for infra
   hosts: infra
   become: true
-  # gather_facts: false
-  tasks:    
-  # - name: wait for infra to be ready 
-  #   wait_for:
-  #     host: "{{ os_infra_instance_name }}"
-  #     port: 22
-  #     state: started
-  #     timeout: 300
-
-  # - name: Gather facts for first time
-  #   setup:
+  gather_facts: true
+  tasks:
 #############################################################
 # this is required based on ORock settings 
 #############################################################
