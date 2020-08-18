@@ -79,7 +79,7 @@ resource "openstack_networking_subnet_v2" "private-subnet" {
   name            = "{{ os_private_subnet_name }}"
   network_id      = openstack_networking_network_v2.private-network.id
   cidr            = "{{ os_cidr }}"
-  #dns_nameservers = {{ os_dns | replace("'", "\"") }}
+  dns_nameservers = {{ os_dns | replace("'", "\"") }}
   ip_version      = 4
 }
 output "openstack_networking_network_v2_subnet" {
