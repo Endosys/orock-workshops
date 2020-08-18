@@ -1,6 +1,10 @@
 #cloud-config
 #hostname: {{ os_infra_instance_name }}
 #fqdn: {{ os_infra_instance_name }}
+manage_resolv_conf: true
+
+resolv_conf:
+  nameservers: "{{ os_dns }}"
 runcmd:
 - systemctl enable --now cockpit.socket
 - echo "{{ workshop_password }}" | passwd --stdin cloud-user
