@@ -5,8 +5,8 @@
 - name: Add infra instance to Ansible Hosts File
   lineinfile:
     path: "{{ inventory_working_dir }}/hosts"
-    insertafter: '^\[infra\]'
-    line: "{{workshop_prefix}}.infra.{{ domain_name }}"
+    insertafter: '^\[nodes\]'
+    line: "{{workshop_prefix}}.[0:{{ number_nodes | int - 1 }}].{{ domain_name }}"
   tags:
     - tf_create
 #---------------------------------------------------
@@ -66,20 +66,15 @@
   tags:
     - tf_create
 
-- name: Template terraform.tfvars
-  template: dest="{{ terraform_working_dir }}/terraform.tfvars"  src=terraform.tfvars.j2
-  tags:
-    - tf_create
-
-- name: Template infra-user-data
-  template: dest="{{ terraform_working_dir }}/infra-user-data.txt"  src=infra-user-data.txt.j2
-  tags:
-    - tf_create
-
-# - name: Template node-user-data
-#   template: dest="{{ terraform_working_dir }}/node-user-data.txt"  src=node-user-data.txt.j2
+# - name: Template terraform.tfvars
+#   template: dest="{{ terraform_working_dir }}/terraform.tfvars"  src=terraform.tfvars.j2
 #   tags:
 #     - tf_create
+
+- name: Template infra-user-data
+  template: dest="{{ terraform_working_dir }}/user-data.txt"  src=user-data.txt.j2
+  tags:
+    - tf_create
 
 - name: Check Terraform version
   shell: terraform version
@@ -109,15 +104,5 @@
 
 - debug:
     msg: "{{ terraform_template_output }}"
-  tags:
-    - tf_create
-
-- debug:
-    msg: "{{ terraform_template_output.outputs.public_ip.value }}"
-  tags:
-    - tf_create
-
-- set_fact:
-    openstack_public_ip: "{{ terraform_template_output.outputs.public_ip.value }}"
   tags:
     - tf_create
