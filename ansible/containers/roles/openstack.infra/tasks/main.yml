@@ -11,7 +11,7 @@
     - tf_create
 
 - name: Add node instnces to inventory
-  add_hosts:
+  add_host:
     name: "{{ item }}"
     groups: nodes
   with_items: "{{workshop_prefix}}.[0:{{ number_nodes | int - 1 }}].{{ domain_name }}"
