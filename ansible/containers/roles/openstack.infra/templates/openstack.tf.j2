@@ -187,5 +187,5 @@ resource "aws_route53_record" "nodes" {
 }
 
 output "aws_route53_record_nodes" {
-  value = "Completed Adding Route53 Record ${aws_route53_record.nodes}"
+  value = aws_route53_record.nodes
 }
