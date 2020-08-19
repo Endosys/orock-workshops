@@ -44,11 +44,12 @@ output "external-network_id" {
 #----------------------------------------------
 # public external floating ip.
 resource "openstack_networking_floatingip_v2" "floatingip" {
+  count = "{{ number_nodes }}"
   pool = "{{ os_external_network_name }}"
-  description = "{{ workshop_prefix }}-external-floatingip"
+  description = "{{ workshop_prefix }}-external-floatingip-${count.index}"
 }
-output "public_ip" {
-  value = openstack_networking_floatingip_v2.floatingip.address
+output "external_floatingips" {
+  value = openstack_networking_floatingip_v2.floatingip
 }
 #----------------------------------------------
 # router
@@ -116,16 +117,18 @@ resource "openstack_compute_secgroup_v2" "secgroup" {
 output "openstack_compute_secgroup_v2_secgroup" {
   value = "Completed ${openstack_compute_secgroup_v2.secgroup.name}"
 }
+
 #----------------------------------------------
-# infra instance
+# workshop node instances
 #----------------------------------------------
-resource "openstack_compute_instance_v2" "infra" {
-  depends_on      = [openstack_networking_subnet_v2.private-subnet,openstack_compute_secgroup_v2.secgroup]
-  name            = "{{ os_infra_instance_name }}"
+resource "openstack_compute_instance_v2" "nodes" {
+  depends_on      = [openstack_networking_subnet_v2.private-subnet,openstack_compute_secgroup_v2.secgroup,data.openstack_images_image_v2.image]
+  count           = "{{ number_nodes }}"
+  name            = "{{ workshop_prefix }}.${count.index}.{{ domain_name }}"
   flavor_name     = "{{ os_flavor_name }}"
   key_pair        = "{{ os_key_name }}"
   security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
-  user_data       = file("infra-user-data.txt")
+  user_data       = file("user-data.txt")
 
   block_device {
     uuid                  = data.openstack_images_image_v2.image.id
@@ -139,24 +142,26 @@ resource "openstack_compute_instance_v2" "infra" {
   metadata = {
     Workshop = "{{ workshop_prefix }}"
     sshUser  = "{{ workshop_user }}"
+    Index    = count.index
   }
 
   network {
     name = openstack_networking_network_v2.private-network.name
-    fixed_ip_v4 = "{{ os_infra_instance_private_ip }}"
   }
 
 }
-output "openstack_compute_instance_v2_infra" {
-  value = "Completed ${openstack_compute_instance_v2.infra.name}"
+output "openstack_compute_instance_v2_nodes" {
+  value = "Completed {{ workshop_prefix }}-nodes"
 }
 
 resource "openstack_compute_floatingip_associate_v2" "external_ip" {
-  depends_on  = [openstack_networking_floatingip_v2.floatingip,openstack_compute_instance_v2.infra]
-  floating_ip = openstack_networking_floatingip_v2.floatingip.address
-  instance_id = openstack_compute_instance_v2.infra.id
-  fixed_ip    = openstack_compute_instance_v2.infra.network.0.fixed_ip_v4
+  depends_on  = [openstack_networking_floatingip_v2.floatingip,openstack_compute_instance_v2.nodes]
+  count       = "{{ number_nodes }}"
+  floating_ip = openstack_networking_floatingip_v2.floatingip[count.index].address
+  instance_id = openstack_compute_instance_v2.nodes[count.index].id
+  fixed_ip    = openstack_compute_instance_v2.nodes[count.index].network.0.fixed_ip_v4
 }
+
 #----------------------------------------------
 # aws route53 record
 #----------------------------------------------
@@ -170,57 +175,17 @@ data "aws_route53_zone" "selected" {
   name         = "{{ aws_route53_zone_name }}"
 }
 
-resource "aws_route53_record" "infra" {
+resource "aws_route53_record" "nodes" {
+  depends_on  = [openstack_compute_floatingip_associate_v2.external_ip]
+  count = "{{ number_nodes }}"
   zone_id = data.aws_route53_zone.selected.id                       
-  name = "{{ os_infra_instance_name }}"
+  name = openstack_compute_instance_v2.nodes[count.index].name
   type = "A"
   ttl = "300"
   # matches up record N to instance N
-  records = ["${openstack_networking_floatingip_v2.floatingip.address}"]
+  records = ["${openstack_networking_floatingip_v2.floatingip[count.index].address}"]
 }
 
-output "aws_route53_record_infra" {
-  value = "Completed Adding Route53 Record ${aws_route53_record.infra.name}"
+output "aws_route53_record_nodes" {
+  value = "Completed Adding Route53 Record ${aws_route53_record.nodes}"
 }
-
-# #----------------------------------------------
-# # workshop node instances
-# #----------------------------------------------
-# resource "openstack_compute_instance_v2" "nodes" {
-#   depends_on      = [openstack_networking_subnet_v2.private-subnet,openstack_compute_secgroup_v2.secgroup]
-#   count           = var.number_nodes
-#   name            = "{{ workshop_prefix }}.${count.index}.{{ domain_name }}"
-#   flavor_name     = "{{ os_flavor_name }}"
-#   key_pair        = "{{ workshop_prefix }}-containers"
-#   security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
-#   user_data       = file("node-user-data.txt")
-
-#   block_device {
-#     uuid                  = openstack_images_image_v2.image.id
-#     source_type           = "image"
-#     volume_size           = "{{ ebs_root_block_size }}"
-#     boot_index            = 0
-#     destination_type      = "volume"
-#     delete_on_termination = true
-#   }
-
-#   metadata = {
-#     Workshop = "{{ workshop_prefix }}"
-#     sshUser  = "{{ workshop_user }}"
-#     Index    = count.index
-#   }
-
-#   network {
-#     name = openstack_networking_network_v2.private-network.name
-#   }
-
-#   # tags = [
-#   #   "index_${count.index}",
-#   #   "workshop_fierce-test",
-#   #   "sshuser_cloud-user"
-#   # ]
-
-# }
-# output "openstack_compute_instance_v2_nodes" {
-#   value = "Completed {{ workshop_prefix }}-nodes"
-# }
