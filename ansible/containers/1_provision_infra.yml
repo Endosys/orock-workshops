@@ -10,6 +10,8 @@
 
   post_tasks:
   - name: wait for nodes to be ready 
+    - pause:
+      minutes: 5
     wait_for:
       host: "{{ item }}"
       port: 22
@@ -49,11 +51,37 @@
       name: firewalld
       state: restarted
       enabled: true
- 
-  # - include_role:
-  #     name: dns
 
-  # - include_role:
-  #     name: nginx
+  - name: Install podman
+    yum:
+      name: podman
+      state: latest
 
+  - include_role:
+      name: atomic_scanner_plugins
+
+  - include_role:
+      name: container_check_stp
+
+  - include_role:
+      name: jq
+
+  - include_role:
+      name: skopeo
+
+  - include_role:
+      name: nodejs
+
+  - include_role:
+      name: system-user
+
+  - include_role:
+      name: cockpit
+
+  - include_role:
+      name: upgrade
+
+  - include_role:
+      name: subscription_manager
+      
 ...

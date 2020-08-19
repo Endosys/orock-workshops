@@ -1,4 +1,0 @@
-#cloud-config
-runcmd:
-- systemctl enable --now cockpit.socket
-- echo "{{ workshop_password }}" | passwd --stdin cloud-user
