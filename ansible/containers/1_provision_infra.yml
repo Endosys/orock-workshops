@@ -10,13 +10,11 @@
 
   post_tasks:
   - name: wait for nodes to be ready 
-    - pause:
-      minutes: 5
     wait_for:
       host: "{{ item }}"
       port: 22
       state: started
-      delay: 30
+      delay: 5
       timeout: 300
     with_items: "{{ groups.nodes }}"
 
