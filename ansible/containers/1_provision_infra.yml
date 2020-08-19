@@ -49,6 +49,39 @@
       name: firewalld
       state: restarted
       enabled: true
+
+#############################################################
+# move cockpit from port 9090 to 9091
+#############################################################
+  - name: create the cockpit socket directory
+    file:
+      path: /etc/systemd/system/cockpit.socket.d
+      state: directory
+  - name: Copy using inline content
+    copy:
+      dest: /etc/systemd/system/cockpit.socket.d/listen.conf
+      content: |
+        [Socket]
+        ListenStream=9091
+  - name: Allow Apache to listen on tcp port 8888
+    seport:
+      ports: 9091
+      proto: tcp
+      setype: websm_port_t
+      state: present
+  - firewalld:
+      port: 9091/tcp
+      permanent: yes
+      state: enabled
+  - name: restart cockpit service
+    systemd:
+      name: "{{ item }}"
+      state: restarted
+      daemon_reload: true
+    loop:
+    - cockpit.service
+    - cockpit.socket
+#############################################################
   
   - include_role:
       name: dns
