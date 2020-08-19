@@ -3,7 +3,7 @@
 
 - name: Unregister Nodes 
   become: yes
-  hosts: infra
+  hosts: nodes
   remote_user: "{{ system_user }}"
   tasks:
   - name: Unsubscribe RHN
