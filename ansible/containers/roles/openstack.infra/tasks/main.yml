@@ -2,13 +2,19 @@
 #---------------------------------------------------
 #  Hosts instance  Creation
 #---------------------------------------------------
-- name: Add infra instance to Ansible Hosts File
+- name: Add node instances to Ansible Hosts File
   lineinfile:
     path: "{{ inventory_working_dir }}/hosts"
     insertafter: '^\[nodes\]'
     line: "{{workshop_prefix}}.[0:{{ number_nodes | int - 1 }}].{{ domain_name }}"
   tags:
     - tf_create
+
+- name: Add node instnces to inventory
+  add_hosts:
+    name: "{{ item }}"
+    groups: nodes
+  with_items: "{{workshop_prefix}}.[0:{{ number_nodes | int - 1 }}].{{ domain_name }}"
 #---------------------------------------------------
 #  SSH Key
 #---------------------------------------------------
