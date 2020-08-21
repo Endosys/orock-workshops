@@ -1,6 +1,0 @@
----
-# handlers file for dns
-- name: restart dns
-  service:
-    name: named-chroot
-    state: restarted

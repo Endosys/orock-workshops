@@ -357,3 +357,6 @@ orock-project.yml
 test-workshop.yml
 unregister.sh
 terraform/
+all.yml
+.config/
+clouds.yaml
