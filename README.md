@@ -4,6 +4,11 @@ This repo contains ansible playbooks for building out environments and systems f
 ## Build using Docker/Podman 
 To build the workshop with Docker or Podman switch to the container directory and build the image from the dockerfile
 
+### Docker login
+```
+docker login registry.redhat.io
+```
+
 ### Docker build
 ```
 docker build -t ansible-workshops .
