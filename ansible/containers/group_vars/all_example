@@ -9,7 +9,7 @@
 # Ensure that the name does not include special characters such as underscores, etc.
 workshop_prefix:                  "containers101"
 domain_name:                      ""
-number_nodes:                     "2"            # Student Nodes
+number_labs:                      "2"            # Student Labs
 workshop_user:                    "cloud-user"
 workshop_password:                "redhat!@#"
 ################################################################################

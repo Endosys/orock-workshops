@@ -6,7 +6,7 @@
   lineinfile:
     path: "{{ inventory_working_dir }}/hosts"
     insertafter: '^\[nodes\]'
-    line: "{{workshop_prefix}}.[0:{{ number_nodes | int - 1 }}].{{ domain_name }}"
+    line: "{{workshop_prefix}}.[0:{{ number_labs | int - 1 }}].{{ domain_name }}"
   tags:
     - tf_create
 
@@ -14,7 +14,7 @@
   add_host:
     name: "{{workshop_prefix}}.{{ item }}.{{ domain_name }}"
     groups: nodes
-  with_sequence: start=0 end={{ number_nodes | int - 1 }}
+  with_sequence: start=0 end={{ number_labs | int - 1 }}
 #---------------------------------------------------
 #  SSH Key
 #---------------------------------------------------

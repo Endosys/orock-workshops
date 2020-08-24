@@ -31,5 +31,5 @@
     lineinfile:
       path: "{{ inventory_working_dir }}/hosts"
       insertafter: '^\[nodes\]'
-      line: "{{workshop_prefix}}.[0:{{ number_nodes | int - 1 }}].{{ domain_name }}"
+      line: "{{workshop_prefix}}.[0:{{ number_labs | int - 1 }}].{{ domain_name }}"
       state: absent
