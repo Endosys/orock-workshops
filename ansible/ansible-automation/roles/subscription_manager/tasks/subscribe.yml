@@ -1,0 +1,80 @@
+---
+#---------------------------------------------------
+# Key Installation
+#---------------------------------------------------
+- name: Import keys
+  shell: rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+# DISABLED BECAUSE IT IS SLOW, ACROSS MANY NODES
+#  rpm_key:
+#    state: present
+#    key: "{{ item }}"
+#  with_items:
+#    - /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-beta
+#    - /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+  tags:
+    - rhel
+#---------------------------------------------------
+# Subscribe to RHN
+#---------------------------------------------------
+- name: Check RHN subscription status
+  command: subscription-manager status
+  register: sm_result
+  ignore_errors: True
+  tags:
+    - rhel
+
+- debug:
+    var: sm_result
+
+- name: Remove RHUI client (RHEL 8)
+  package:
+    name: rh-amazon-rhui-client
+    state: absent
+  when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == '8'
+
+- name: Subscribe to RHSM via username/password/pool_id
+  block:
+    - redhat_subscription:
+        username: "{{ rhn_username }}"
+        password: "{{ rhn_password }}"
+        pool: "{{ rhn_pool_id }}"
+        force_register: true
+        state: present
+  rescue:
+    - name: Retrying subscription
+      redhat_subscription:
+        username: "{{ rhn_username }}"
+        password: "{{ rhn_password }}"
+        pool: "{{ rhn_pool_id }}"
+        force_register: true
+        state: present
+  when: sm_result.failed
+  tags:
+    - rhel
+
+#---------------------------------------------------
+# Add Required Repositories
+#---------------------------------------------------
+- name: RHEL 8 tasks
+  block:
+  - name: Check to see if requisite repos are already enabled 
+    become: yes
+    shell: subscription-manager repos --list-enabled | egrep 'rhel-8-for-x86_64-baseos-rpms|rhel-8-for-x86_64-appstream-rpms|jb-eap-7.2-for-rhel-8-x86_64-rpms' | wc -l
+    register: smr_result
+    ignore_errors: True
+    tags:
+      - rhel
+
+  - name: Disable all repos by default (RHEL 8)
+    command: subscription-manager repos --disable "*"
+    when: smr_result.stdout != "3" 
+    tags:
+      - rhel
+  
+  - name: Enable the requisite rhel8 repos
+    shell: subscription-manager repos --enable="rhel-8-for-x86_64-baseos-rpms" --enable="rhel-8-for-x86_64-appstream-rpms" --enable="jb-eap-7.2-for-rhel-8-x86_64-rpms"
+    when: smr_result.stdout != "3"
+    tags:
+      - rhel
+
+  when: ansible_distribution == 'RedHat' and ansible_distribution_major_version == '8'

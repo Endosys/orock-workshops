@@ -1,0 +1,14 @@
+# file: roles/subscription_manager/tasks/main.yml
+---
+
+# Subscribe machines via username & password 
+# or activation keys
+- import_tasks: subscribe.yml
+
+
+
+
+
+
+
+

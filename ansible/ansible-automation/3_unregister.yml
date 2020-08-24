@@ -1,0 +1,42 @@
+# file: 3_unregister.yml
+---
+
+- name: Unregister Nodes 
+  become: yes
+  hosts: nodes,towers
+  remote_user: "{{ system_user }}"
+  tasks:
+  - name: Unsubscribe RHN
+    redhat_subscription:
+      state: absent
+
+- name: Remove infrastructure using Terraform
+  hosts: local_target
+  tasks:
+  - name: terraform template to remove infrastructure
+    terraform:
+      project_path: "{{ terraform_working_dir }}"
+      state: absent
+    register: terraform_template_output
+
+  - debug:
+      msg: "{{ terraform_template_output }}"
+
+  - name: clean up terraform artifact directory
+    file:
+      path: "{{ terraform_working_dir }}/"
+      state: absent
+
+  - name: Remove node instances from Ansible Hosts File
+    lineinfile:
+      path: "{{ inventory_working_dir }}/hosts"
+      insertafter: '^\[nodes\]'
+      line: "{{workshop_prefix}}.node.[0:{{ number_labs | int - 1 }}].{{ domain_name }}"
+      state: absent
+
+  - name: Remove tower instances from Ansible Hosts File
+    lineinfile:
+      path: "{{ inventory_working_dir }}/hosts"
+      insertafter: '^\[towers\]'
+      line: "{{workshop_prefix}}.tower.[0:{{ number_labs | int - 1 }}].{{ domain_name }}"
+      state: absent

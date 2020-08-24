@@ -1,0 +1,259 @@
+# LAUNCH TOWER IN AMAZON EC2 (Public Tower Image)
+# ------------------------------------------------
+# EC2 Region  Location      AMI TYPE  AMI ID    
+# us-east-1   N. Virginia   PV        ami-a86614bf
+# us-west-1   N. California PV        ami-cdd79aad
+# us-west-2   Oregon        PV        ami-028f5e62
+
+#----------------------------------------------
+# Variables
+#----------------------------------------------
+variable "aws_access_key" { default = "{{ aws_access_key }}" }
+variable "aws_secret_key" { default = "{{ aws_secret_key }}" }
+#----------------------------------------------
+# API Keys
+#----------------------------------------------
+provider "openstack" {
+    cloud = "{{ os_cloud }}"
+}
+#----------------------------------------------
+# get image id based on name 
+#----------------------------------------------
+data "openstack_images_image_v2" "image" {
+  name        = "{{ os_image_name }}"
+  most_recent = true
+
+  properties = {
+    key = "value"
+  }
+}
+output "image_id" {
+  value = data.openstack_images_image_v2.image.id
+}
+#----------------------------------------------
+# get external network based on name
+#----------------------------------------------
+data "openstack_networking_network_v2" "external-network" {
+  name = "{{ os_external_network_name }}"
+}
+output "external-network_id" {
+  value = data.openstack_networking_network_v2.external-network.id
+}
+#----------------------------------------------
+# node external floating ip
+#----------------------------------------------
+# public external floating ip.
+resource "openstack_networking_floatingip_v2" "node_floatingip" {
+  count = "{{ number_labs }}"
+  pool = "{{ os_external_network_name }}"
+  description = "{{ workshop_prefix }}-node-external-floatingip-${count.index}"
+}
+output "node_external_floatingips" {
+  value = openstack_networking_floatingip_v2.node_floatingip
+}
+#----------------------------------------------
+# tower external floating ip
+#----------------------------------------------
+# public external floating ip.
+resource "openstack_networking_floatingip_v2" "tower_floatingip" {
+  count = "{{ number_labs }}"
+  pool = "{{ os_external_network_name }}"
+  description = "{{ workshop_prefix }}-tower-external-floatingip-${count.index}"
+}
+output "tower_external_floatingips" {
+  value = openstack_networking_floatingip_v2.tower_floatingip
+}
+#----------------------------------------------
+# router
+#----------------------------------------------
+# router from public to private subnet.
+resource "openstack_networking_router_v2" "router" {
+  name                = "{{ os_router_name }}"
+  external_network_id = data.openstack_networking_network_v2.external-network.id
+}
+output "openstack_networking_router_v2_router" {
+  value = "Completed ${openstack_networking_router_v2.router.name}"
+}
+#----------------------------------------------
+# private network
+#----------------------------------------------
+resource "openstack_networking_network_v2" "private-network" {
+  name           = "{{ os_private_network_name }}"
+  admin_state_up = "true"
+}
+output "openstack_networking_network_v2_private-network" {
+  value = "Completed ${openstack_networking_network_v2.private-network.name}"
+}
+#----------------------------------------------
+# private subnet
+#----------------------------------------------
+resource "openstack_networking_subnet_v2" "private-subnet" {
+  depends_on      = [openstack_networking_network_v2.private-network]
+  name            = "{{ os_private_subnet_name }}"
+  network_id      = openstack_networking_network_v2.private-network.id
+  cidr            = "{{ os_cidr }}"
+  dns_nameservers = {{ os_dns | replace("'", "\"") }}
+  ip_version      = 4
+}
+output "openstack_networking_network_v2_subnet" {
+  value = "Completed {{ workshop_prefix }}-containers-101-subnet"
+}
+#----------------------------------------------
+# router interface to private subnet
+#----------------------------------------------
+resource "openstack_networking_router_interface_v2" "router_interface" {
+  depends_on = [openstack_networking_router_v2.router,openstack_networking_subnet_v2.private-subnet]
+  router_id = openstack_networking_router_v2.router.id
+  subnet_id = openstack_networking_subnet_v2.private-subnet.id
+}
+output "openstack_networking_router_interface_v2_router_interface" {
+  value = "Completed {{ workshop_prefix }}-router_interface"
+}
+#----------------------------------------------
+# security group
+#----------------------------------------------
+resource "openstack_compute_secgroup_v2" "secgroup" {
+  name        = "{{ os_sg_name }}"
+  description = "{{ os_sg_name }}"
+
+{% for port in os_sg_ports %}
+  rule {
+    from_port   = {{ port }}
+    to_port     = {{ port }}
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
+{% endfor %}
+
+}
+output "openstack_compute_secgroup_v2_secgroup" {
+  value = "Completed ${openstack_compute_secgroup_v2.secgroup.name}"
+}
+
+#----------------------------------------------
+# workshop tower instances
+#----------------------------------------------
+resource "openstack_compute_instance_v2" "towers" {
+  depends_on      = [openstack_networking_subnet_v2.private-subnet,openstack_compute_secgroup_v2.secgroup,data.openstack_images_image_v2.image]
+  count           = "{{ number_labs }}"
+  name            = "{{ workshop_prefix }}.tower.${count.index}.{{ domain_name }}"
+  flavor_name     = "{{ os_flavor_name }}"
+  key_pair        = "{{ os_key_name }}"
+  security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
+  user_data       = file("user-data.txt")
+
+  block_device {
+    uuid                  = data.openstack_images_image_v2.image.id
+    source_type           = "image"
+    volume_size           = "{{ ebs_root_block_size }}"
+    boot_index            = 0
+    destination_type      = "volume"
+    delete_on_termination = true
+  }
+
+  metadata = {
+    Workshop = "{{ workshop_prefix }}"
+    sshUser  = "{{ workshop_user }}"
+    Index    = count.index
+  }
+
+  network {
+    name = openstack_networking_network_v2.private-network.name
+  }
+
+}
+output "openstack_compute_instance_v2_towers" {
+  value = "Completed {{ workshop_prefix }}-towers"
+}
+resource "openstack_compute_floatingip_associate_v2" "tower_external_ip" {
+  depends_on  = [openstack_networking_floatingip_v2.tower_floatingip,openstack_compute_instance_v2.towers]
+  count       = "{{ number_labs }}"
+  floating_ip = openstack_networking_floatingip_v2.tower_floatingip[count.index].address
+  instance_id = openstack_compute_instance_v2.towers[count.index].id
+  fixed_ip    = openstack_compute_instance_v2.towers[count.index].network.0.fixed_ip_v4
+}
+#----------------------------------------------
+# workshop node instances
+#----------------------------------------------
+resource "openstack_compute_instance_v2" "nodes" {
+  depends_on      = [openstack_networking_subnet_v2.private-subnet,openstack_compute_secgroup_v2.secgroup,data.openstack_images_image_v2.image]
+  count           = "{{ number_labs }}"
+  name            = "{{ workshop_prefix }}.node.${count.index}.{{ domain_name }}"
+  flavor_name     = "{{ os_flavor_name }}"
+  key_pair        = "{{ os_key_name }}"
+  security_groups = ["${openstack_compute_secgroup_v2.secgroup.name}"]
+  user_data       = file("user-data.txt")
+
+  block_device {
+    uuid                  = data.openstack_images_image_v2.image.id
+    source_type           = "image"
+    volume_size           = "{{ ebs_root_block_size }}"
+    boot_index            = 0
+    destination_type      = "volume"
+    delete_on_termination = true
+  }
+
+  metadata = {
+    Workshop = "{{ workshop_prefix }}"
+    sshUser  = "{{ workshop_user }}"
+    Index    = count.index
+  }
+
+  network {
+    name = openstack_networking_network_v2.private-network.name
+  }
+
+}
+output "openstack_compute_instance_v2_nodes" {
+  value = "Completed {{ workshop_prefix }}-nodes"
+}
+
+resource "openstack_compute_floatingip_associate_v2" "node_external_ip" {
+  depends_on  = [openstack_networking_floatingip_v2.node_floatingip,openstack_compute_instance_v2.nodes]
+  count       = "{{ number_labs }}"
+  floating_ip = openstack_networking_floatingip_v2.node_floatingip[count.index].address
+  instance_id = openstack_compute_instance_v2.nodes[count.index].id
+  fixed_ip    = openstack_compute_instance_v2.nodes[count.index].network.0.fixed_ip_v4
+}
+
+#----------------------------------------------
+# aws route53 record
+#----------------------------------------------
+provider "aws" {
+    access_key = "{{ aws_access_key }}"
+    secret_key = "{{ aws_secret_key }}"
+    region     = "{{ aws_region }}"
+}
+
+data "aws_route53_zone" "selected" {
+  name         = "{{ aws_route53_zone_name }}"
+}
+
+resource "aws_route53_record" "nodes" {
+  depends_on  = [openstack_compute_floatingip_associate_v2.node_external_ip]
+  count = "{{ number_labs }}"
+  zone_id = data.aws_route53_zone.selected.id                       
+  name = openstack_compute_instance_v2.nodes[count.index].name
+  type = "A"
+  ttl = "300"
+  # matches up record N to instance N
+  records = ["${openstack_networking_floatingip_v2.node_floatingip[count.index].address}"]
+}
+
+output "aws_route53_record_nodes" {
+  value = aws_route53_record.nodes
+}
+
+resource "aws_route53_record" "towers" {
+  depends_on  = [openstack_compute_floatingip_associate_v2.tower_external_ip]
+  count = "{{ number_labs }}"
+  zone_id = data.aws_route53_zone.selected.id                       
+  name = openstack_compute_instance_v2.towers[count.index].name
+  type = "A"
+  ttl = "300"
+  # matches up record N to instance N
+  records = ["${openstack_networking_floatingip_v2.tower_floatingip[count.index].address}"]
+}
+output "aws_route53_record_towers" {
+  value = aws_route53_record.towers
+}

@@ -1,0 +1,39 @@
+---
+# tasks file for cockpit
+- name: Install cockpit
+  block:
+  - name: Ensure cockpit packages exist
+    package:
+      name: "{{ item }}"
+      state: latest
+    with_items:
+    - cockpit
+    - cockpit-dashboard
+    - cockpit-shell
+    - cockpit-ws
+    - cockpit-doc
+    - rsync
+    - vim
+    - wget
+
+- name: Install cockpit containers (rhel7)
+  block:
+  - name: Ensure cockpit packages exist
+    package:
+      name: cockpit-docker
+      state: latest
+    when: ansible_distribution_major_version == '7'
+
+- name: Install cockpit containers (rhel8)
+  block:
+  - name: Ensure cockpit packages exist
+    package:
+      name: cockpit-podman
+      state: latest
+    when: ansible_distribution_major_version == '8'
+
+  - name: Ensure cockpit is started
+    service:
+      name: cockpit.socket
+      state: started
+      enabled: yes

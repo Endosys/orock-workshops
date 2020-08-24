@@ -1,0 +1,24 @@
+# file: 1_provision.yml
+---
+# https://www.terraform.io/docs/providers/aws/index.html
+
+
+- name: Provision Openstack Infrastucture using Terraform 
+  hosts: localhost
+  roles:
+  - { role: openstack.infra, tags: ["tf_create"] }
+
+  post_tasks:
+  - name: wait for towers and nodes to be ready 
+    wait_for:
+      host: "{{ item }}"
+      port: 22
+      state: started
+      delay: 5
+      timeout: 300
+    with_items: 
+    - "{{ groups.nodes }}"
+    - "{{ groups.towers }}"
+
+
+...
