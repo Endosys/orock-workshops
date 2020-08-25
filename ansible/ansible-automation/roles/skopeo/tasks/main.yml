@@ -1,9 +1,0 @@
-# file: roles/skopeo/tasks/main.yml
----
-
-- name: Install Skopeo
-  become: yes
-  yum:
-    name:
-    - skopeo
-    state: present
