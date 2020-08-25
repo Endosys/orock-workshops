@@ -28,7 +28,7 @@ os_private_subnet_name:           "{{ workshop_prefix }}-private-subnet"
 os_router_name:                   "{{ workshop_prefix }}-router"
 os_cidr:                          ""
 os_sg_name:                       "{{ workshop_prefix }}-secgroup"
-os_sg_ports:                      ["22","9090","443","80"]
+os_sg_ports:                      ["22","9090","443","80","3389","8080","8888"]
 os_infra_instance_private_ip:     "{{ os_cidr | ipaddr('last_usable') }}"
 os_infra_instance_name:           "{{ workshop_prefix }}.infra.{{ domain_name }}"
 os_dns:                           ["{{ os_infra_instance_private_ip }}","8.8.8.8","8.8.4.4"]

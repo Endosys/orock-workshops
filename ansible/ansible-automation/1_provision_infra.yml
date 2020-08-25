@@ -25,37 +25,46 @@
   become: yes
   remote_user: "{{ workshop_user }}"
   hosts:
-    - towers
-    - nodes
+  - towers
+  - nodes
   gather_facts: yes
+  pre_tasks:
+#############################################################
+# this is required based on ORock settings 
+#############################################################
+  - name: Remove clout-init config from Networkmanager
+    file:
+      path: /etc/NetworkManager/conf.d/99-cloud-init.conf
+      state: absent
+  - name: restart NetworkManager for subnet DNS
+    systemd:
+      name: NetworkManager
+      state: restarted
+      daemon_reload: true
+#############################################################
   roles:
-    - role: subscription_manager
+  - role: subscription_manager
 
 - name: Configure epel on tower nodes
   become: yes
   remote_user: "{{ workshop_user }}"
   hosts: towers
-  tasks:
-    - name: RHEL 8 on AWS via Cloud Access has no available repositories
-      fail:
-        msg: "Please use RHSM via user ID/password or org ID/activation key."
-      when: cloud_access and ansible_distribution == 'RedHat' and ansible_distribution_major_version == '8'
   roles:
-    - role: epel
+  - role: epel
 
 - name: Remove Red Hat EAP packages
   become: yes
   remote_user: "{{ workshop_user }}"
   hosts:
-    - towers
-    - nodes
+  - towers
+  - nodes
   gather_facts: no
   tasks:
-    - package:
-        name: eap7-*
-        state: absent
-      when: jboss is defined
-      ignore_errors: yes
+  - package:
+      name: eap7-*
+      state: absent
+    when: jboss is defined
+    ignore_errors: yes
 
 - name: Configure software on nodes
   become: yes
@@ -63,12 +72,12 @@
   hosts: towers
   gather_facts: no
   roles:
-    - role: nodejs
-    - role: ansible.tower
-    - role: vscode
-    - role: graphical
-    - role: system-user
-    # - role: powerline
+  - role: nodejs
+  - role: ansible.tower
+  - role: vscode
+  # - role: graphical
+  - role: system-user
+  # - role: powerline
 
 - name: Configure cockpit for web console
   become: yes
@@ -76,7 +85,7 @@
   hosts: towers
   gather_facts: no
   roles:
-    - role: cockpit
+  - role: cockpit
 
 - name: Stage Maven POMs
   become: yes
@@ -84,25 +93,25 @@
   hosts: nodes
   gather_facts: yes
   roles:
-    - role: poms
-      when: jboss is defined
+  - role: poms
+    when: jboss is defined
 
 - name: Upgrade packages
   become: yes
   remote_user: "{{ workshop_user }}"
   hosts:
-    - towers
-    - nodes
+  - towers
+  - nodes
   roles:
-    - role: upgrade
+  - role: upgrade
 
 - name: Re-enable SCL repo when upgrade disables it
   become: yes
   remote_user: "{{ workshop_user }}"
   hosts:
-    - towers
-    - nodes
+  - towers
+  - nodes
   gather_facts: yes
   roles:
-    - role: subscription_manager 
+  - role: subscription_manager 
 ...
