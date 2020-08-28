@@ -66,26 +66,28 @@
     when: jboss is defined
     ignore_errors: yes
 
-- name: Ensure python3-pip installed for powerline
-  become: yes
-  remote_user: "{{ workshop_user }}"
-  hosts: tower
-  gather_facts: no
-  tasks:
-  - package:
-      name: python3-pip
-      state: latest
+# - name: Ensure python3-pip installed for powerline
+#   become: yes
+#   remote_user: "{{ workshop_user }}"
+#   hosts: tower
+#   gather_facts: no
+#   tasks:
+#   - package:
+#       name: python3-pip
+#       state: latest
 
 - name: Configure software on nodes
   become: yes
   remote_user: "{{ workshop_user }}"
   hosts: towers
   gather_facts: no
+
   roles:
+  - role: firewalld
   - role: nodejs
   - role: ansible.tower
   - role: system-user
-  - role: powerline
+  #- role: powerline
   - role: code-server
     code_pass: "{{ workshop_password }}"
 
