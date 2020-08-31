@@ -5,7 +5,5 @@ ansible_become=yes
 localhost  ansible_connection=local  ansible_python_interpreter='/usr/bin/env python'
 
 [nodes]
-fierce-test.node.[0:0].fiercesw.network
 
 [towers]
-fierce-test.tower.[0:0].fiercesw.network
