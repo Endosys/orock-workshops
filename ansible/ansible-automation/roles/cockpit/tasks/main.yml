@@ -12,6 +12,8 @@
     - cockpit-shell
     - cockpit-ws
     - cockpit-doc
+    - cockpit-session-recording
+    - tlog
     - rsync
     - vim
     - wget
