@@ -2,15 +2,15 @@
 ---
 
 - name: Unregister Nodes 
- become: yes
- hosts: 
- - nodes
- - towers
- remote_user: "{{ system_user }}"
- tasks:
- - name: Unsubscribe RHN
-   redhat_subscription:
-     state: absent
+  become: yes
+  hosts: 
+  - nodes
+  - towers
+  remote_user: "{{ system_user }}"
+  tasks:
+  - name: Unsubscribe RHN
+    redhat_subscription:
+      state: absent
 
 - name: Remove infrastructure using Terraform
   hosts: local_target

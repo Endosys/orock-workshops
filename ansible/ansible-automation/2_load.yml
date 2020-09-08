@@ -83,6 +83,10 @@
     with_items:
     - "hello.js"
     - "hello.service"
+  - name: set past on vim
+    copy:
+      dest: "~{{ system_user }}/.vimrc"
+      content: "set laststatus=2 tabstop=2 shiftwidth=2 expandtab paste"
 
 - name: Configure cockpit for web console
   become: yes
